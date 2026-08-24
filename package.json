@@ -1,0 +1,1 @@
+{ "name": "food-delivery-platform", "private": true, "workspaces": [ "apps/*", "packages/*" ] }
