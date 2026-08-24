@@ -152,6 +152,17 @@ export default function HomeScreen() {
   useEffect(() => {
       let filtered = [...allRestaurants];
       
+      // Tab Filtering (Mock Logic)
+      if (activeTab === 'STORE') {
+          filtered = filtered.filter((r: any) => r.id % 2 === 0);
+      } else if (activeTab === 'OFFERS') {
+          filtered = filtered.filter((r: any) => r.id % 3 === 0);
+      } else if (activeTab === 'FOOD ON TRAIN') {
+          filtered = filtered.filter((r: any) => r.id % 4 === 0);
+      } else if (activeTab === 'EATRIGHT') {
+          filtered = filtered.filter((r: any) => r.id % 5 === 0);
+      }
+
       if (searchQuery) {
           filtered = filtered.filter((r: any) => r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase()));
       }
@@ -159,11 +170,9 @@ export default function HomeScreen() {
           filtered = filtered.filter((r: any) => r.description.toLowerCase().includes(activeCategory.toLowerCase()));
       }
       if (isVeg) {
-          // Fake veg logic since backend might not have it: assume every even ID is veg or we just randomly filter to simulate
           filtered = filtered.filter((r: any) => r.id % 2 === 0);
       }
       if (activeFilter === 'Rating 4.0+') {
-          // Fake rating logic: keep all since mock is usually 4+
           filtered = filtered.filter((r: any) => r.id > 0); 
       }
 
@@ -172,7 +181,7 @@ export default function HomeScreen() {
       // Animate the list when filter changes
       listFadeAnim.setValue(0);
       Animated.timing(listFadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-  }, [searchQuery, isVeg, activeCategory, activeFilter, allRestaurants]);
+  }, [searchQuery, isVeg, activeCategory, activeFilter, activeTab, allRestaurants]);
 
   const toggleCategory = (keyword: string) => {
       setActiveCategory(prev => prev === keyword ? '' : keyword);
@@ -257,11 +266,16 @@ export default function HomeScreen() {
                   </View>
               ) : (
                   <View style={{paddingHorizontal: 20}}>
-                    <View style={styles.locationHeader}>
-                        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                            <Text style={styles.locationTitle}>Home, Phase 1 &gt;</Text>
+                    <View style={styles.locationHeaderRow}>
+                        <View style={styles.locationHeader}>
+                            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                <Text style={styles.locationTitle}>Home, Phase 1 &gt;</Text>
+                            </View>
+                            <Text style={styles.locationSub} numberOfLines={1}>Block A, Cyber City, Gurgaon, India</Text>
                         </View>
-                        <Text style={styles.locationSub} numberOfLines={1}>Block A, Cyber City, Gurgaon, India</Text>
+                        <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileIconBtn}>
+                            <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}} style={styles.profileIcon} />
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.serviceToggles}>
@@ -446,9 +460,12 @@ const styles = StyleSheet.create({
   
   // HEADER
   premiumHeaderSection: { backgroundColor: '#020617', paddingTop: Platform.OS === 'android' ? 50 : 20, paddingBottom: 25 },
-  locationHeader: { marginBottom: 25 },
+  locationHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  locationHeader: { flex: 1 },
   locationTitle: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 4, letterSpacing: -0.5 },
   locationSub: { color: '#94a3b8', fontSize: 14, fontWeight: '500' },
+  profileIconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1e293b', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#334155', overflow: 'hidden' },
+  profileIcon: { width: '100%', height: '100%', resizeMode: 'cover' },
   
   serviceToggles: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#0f172a', borderRadius: 24, padding: 8, borderWidth: 1, borderColor: '#1e293b' },
   serviceBtn: { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 20 },
@@ -482,10 +499,10 @@ const styles = StyleSheet.create({
 
   // HERO SECTION
   heroBlueBanner: { backgroundColor: '#0f172a', paddingTop: 35, paddingBottom: 25, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, shadowColor: '#000', shadowOffset: {width: 0, height: 10}, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
-  floatingBurger: { position: 'absolute', top: 25, left: '6%', width: 85, height: 85, opacity: 0.9, resizeMode: 'contain', zIndex: 1 },
-  floatingPizza: { position: 'absolute', top: 15, right: '6%', width: 95, height: 95, opacity: 0.9, resizeMode: 'contain', zIndex: 1 },
-  heroTextCenter: { alignItems: 'center', zIndex: 5, overflow: 'hidden', paddingHorizontal: '22%' },
-  heroText70: { color: '#fff', fontSize: 34, fontWeight: '900', letterSpacing: 0, textShadowColor: '#f59e0b', textShadowOffset: {width: 1, height: 2}, textShadowRadius: 5 },
+  floatingBurger: { position: 'absolute', top: 25, left: '5%', width: 70, height: 70, opacity: 0.9, resizeMode: 'contain', zIndex: 1 },
+  floatingPizza: { position: 'absolute', top: 20, right: '5%', width: 80, height: 80, opacity: 0.9, resizeMode: 'contain', zIndex: 1 },
+  heroTextCenter: { alignItems: 'center', zIndex: 5, overflow: 'hidden', paddingHorizontal: '24%' },
+  heroText70: { color: '#fff', fontSize: 32, fontWeight: '900', letterSpacing: 0, textShadowColor: '#f59e0b', textShadowOffset: {width: 1, height: 2}, textShadowRadius: 5 },
   heroTextUpTo: { color: '#fcd34d', fontSize: 11, fontWeight: '900', letterSpacing: 1.5, marginTop: 3, textAlign: 'center' },
   shineEffect: { position: 'absolute', top: -20, left: 0, width: 30, height: 150, backgroundColor: 'rgba(255,255,255,0.3)', transform: [{rotate: '20deg'}], zIndex: 10 },
   
