@@ -42,7 +42,7 @@ export default function MartScreen() {
                     <Text style={styles.sectionTitle}>Explore Categories</Text>
                     <View style={styles.grid}>
                         {categories.map((cat, i) => (
-                            <TouchableOpacity key={i} style={styles.gridItem}>
+                            <TouchableOpacity key={i} style={styles.gridItem} onPress={() => router.push(`/mart/${encodeURIComponent(cat.name)}`)}>
                                 <View style={styles.catPlaceholder}>
                                     <Image source={{uri: cat.img}} style={styles.catImg} />
                                 </View>

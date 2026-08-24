@@ -344,7 +344,7 @@ export default function HomeScreen() {
                         </PremiumButton>
                         
                         <PremiumButton style={[styles.bentoCard, {backgroundColor: '#8b5cf6'}]} onPress={() => router.push('/mart')}>
-                            <View style={styles.bentoTimeBadge}><Text style={styles.bentoTimeText}>⏱️ 10 MINS</Text></View>
+                            <View style={styles.bentoTimeBadge}><Text style={styles.bentoTimeText}>⚡ 10 MINS</Text></View>
                             <Text style={styles.bentoTitle}>Mart</Text>
                             <Text style={styles.bentoSub}>Groceries</Text>
                             <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3753/3753696.png'}} style={styles.bentoImg} />
@@ -571,8 +571,8 @@ const styles = StyleSheet.create({
   bentoTitle: { color: '#fff', fontSize: 18, fontWeight: '900', zIndex: 2 },
   bentoSub: { color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '700', zIndex: 2, marginTop: 2 },
   bentoImg: { position: 'absolute', bottom: -15, right: -15, width: 80, height: 80, resizeMode: 'contain', opacity: 0.9, transform: [{rotate: '-10deg'}] },
-  bentoTimeBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#0f172a', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 8, zIndex: 3 },
-  bentoTimeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
+  bentoTimeBadge: { position: 'absolute', top: 10, right: 8, backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, zIndex: 3, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.3, shadowRadius: 4, elevation: 5 },
+  bentoTimeText: { color: '#8b5cf6', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
 
   // STICKY SEARCH (Glassmorphic feel)
   stickySearchSection: { backgroundColor: '#020617', borderBottomLeftRadius: 24, borderBottomRightRadius: 24, zIndex: 100, paddingBottom: 10, shadowColor: '#000', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.4, shadowRadius: 15, elevation: 10 },
