@@ -32,18 +32,85 @@ const TOP_RATED = [
 
 const FILTER_PILLS = ['Filter', 'Sort by v', 'Extra off', '99 Store', 'Fast Delivery'];
 
+const SEARCH_TERMS = ['Biryani', 'Pizza', 'Sweets', 'EatRight', 'Burger'];
+
+// Shimmer Skeleton Component
+const SkeletonLoader = ({ width, height, style, borderRadius = 12 }: any) => {
+    const shimmerAnim = useRef(new Animated.Value(0.3)).current;
+    
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(shimmerAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+                Animated.timing(shimmerAnim, { toValue: 0.3, duration: 1000, useNativeDriver: true })
+            ])
+        ).start();
+    }, []);
+
+    return (
+        <Animated.View style={[{ width, height, backgroundColor: '#e5e7eb', borderRadius, opacity: shimmerAnim }, style]} />
+    );
+};
+
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isVeg, setIsVeg] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [appReady, setAppReady] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   
   const [activeTab, setActiveTab] = useState('ALL');
   const TABS = ['ALL', 'STORE', 'OFFERS', 'FOOD ON TRAIN', 'EATRIGHT'];
 
+  // Splash & Scroll Animations
+  const splashOpacity = useRef(new Animated.Value(1)).current;
+  const splashScale = useRef(new Animated.Value(1)).current;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  
+  // Typewriter effect states
+  const [placeholderText, setPlaceholderText] = useState("Search for 'Biryani'");
+  const placeholderIndex = useRef(0);
+  const charIndex = useRef(0);
+
   useEffect(() => {
-    // Fetch user profile logic
+    // Typewriter effect
+    let typingInterval: NodeJS.Timeout;
+    let termInterval = setInterval(() => {
+        placeholderIndex.current = (placeholderIndex.current + 1) % SEARCH_TERMS.length;
+        const currentTerm = SEARCH_TERMS[placeholderIndex.current];
+        charIndex.current = 0;
+        setPlaceholderText(`Search for '`);
+        
+        typingInterval = setInterval(() => {
+            if (charIndex.current <= currentTerm.length) {
+                setPlaceholderText(`Search for '${currentTerm.substring(0, charIndex.current)}'`);
+                charIndex.current++;
+            } else {
+                clearInterval(typingInterval);
+            }
+        }, 100);
+    }, 4000);
+
+    return () => {
+        clearInterval(termInterval);
+        if(typingInterval) clearInterval(typingInterval);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Initial App Load & Splash Screen logic
+    setTimeout(() => {
+        setLoading(false); // Data loaded
+        setTimeout(() => {
+            // Animate Splash Screen out
+            Animated.parallel([
+                Animated.timing(splashOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+                Animated.timing(splashScale, { toValue: 0.9, duration: 400, useNativeDriver: true })
+            ]).start(() => setAppReady(true));
+        }, 500); // Small delay to show skeletons briefly like Swiggy
+    }, 1500); // Simulate network latency
+
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (token) {
       fetch(API_URL + '/api/users/me/profile', { headers: { 'Authorization': `Bearer ${token}` } })
@@ -53,14 +120,12 @@ export default function HomeScreen() {
         }).catch(e => {});
     }
 
-    // Fetch restaurants
     fetch(API_URL + '/api/restaurants/')
       .then((res) => res.json())
       .then((data) => {
         setRestaurants(data);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {});
   }, []);
 
   const renderTopRated = ({ item }: { item: any }) => (
@@ -135,150 +200,192 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[1]} contentContainerStyle={{paddingBottom: 100}}>
-        
-        {/* TOP BLUE SECTION */}
-        <View style={styles.blueHeaderSection}>
-            {/* Location */}
-            <View style={styles.locationHeader}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text style={styles.locationTitle}>Near maa ambey utsav hall &gt;</Text>
-                </View>
-                <Text style={styles.locationSub} numberOfLines={1}>Amrendra Kumar, Pragati Nagar, Sipara, Patna, Bihar...</Text>
+    <View style={styles.container}>
+      {/* FULL SCREEN SPLASH */}
+      {!appReady && (
+        <Animated.View style={[styles.splashScreen, { opacity: splashOpacity, transform: [{ scale: splashScale }] }]}>
+            <View style={styles.logoContainer}>
+                <Text style={styles.logoText}>S</Text>
             </View>
+        </Animated.View>
+      )}
 
-            {/* Service Toggles */}
-            <View style={styles.serviceToggles}>
-                <TouchableOpacity style={[styles.serviceBtn, styles.serviceBtnActive]}>
-                    <Text style={{fontSize: 24, marginBottom: 4}}>🍔</Text>
-                    <Text style={styles.serviceTextActive}>Food</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.serviceBtn}>
-                    <View style={styles.timeBadge}><Text style={styles.timeBadgeText}>22 mins</Text></View>
-                    <Text style={{fontSize: 24, marginBottom: 4}}>🛒</Text>
-                    <Text style={styles.serviceText}>Instamart</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.serviceBtn}>
-                    <Text style={{fontSize: 24, marginBottom: 4}}>🍽️</Text>
-                    <Text style={styles.serviceText}>Dineout</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+      <SafeAreaView style={styles.container}>
+        <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[1]} contentContainerStyle={{paddingBottom: 100}}>
+          
+          {/* TOP BLUE SECTION */}
+          <View style={styles.blueHeaderSection}>
+              {loading ? (
+                  <View>
+                      <SkeletonLoader width={200} height={20} style={{marginBottom: 10}} />
+                      <SkeletonLoader width={300} height={14} style={{marginBottom: 20}} />
+                      <View style={{flexDirection: 'row', gap: 10}}>
+                          <SkeletonLoader width={'30%'} height={80} borderRadius={16} />
+                          <SkeletonLoader width={'30%'} height={80} borderRadius={16} />
+                          <SkeletonLoader width={'30%'} height={80} borderRadius={16} />
+                      </View>
+                  </View>
+              ) : (
+                  <>
+                    <View style={styles.locationHeader}>
+                        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                            <Text style={styles.locationTitle}>Near maa ambey utsav hall &gt;</Text>
+                        </View>
+                        <Text style={styles.locationSub} numberOfLines={1}>Amrendra Kumar, Pragati Nagar, Sipara, Patna, Bihar...</Text>
+                    </View>
 
-        {/* SEARCH & FILTERS (Sticky) */}
-        <View style={styles.stickySearchSection}>
-            <View style={styles.searchRow}>
-                <View style={styles.searchBox}>
-                    <Text style={styles.searchIcon}>🔍</Text>
-                    <TextInput 
-                        style={styles.searchInput}
-                        placeholder="Search for 'Biryani'"
-                        placeholderTextColor="#888"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                    <View style={styles.searchDivider} />
-                    <Text style={styles.micIcon}>🎤</Text>
-                </View>
-                
-                <View style={styles.vegToggleBox}>
-                    <Text style={styles.vegText}>VEG</Text>
-                    <Switch value={isVeg} onValueChange={setIsVeg} trackColor={{false: '#ccc', true: '#22c55e'}} thumbColor="#fff" />
-                </View>
-            </View>
+                    <View style={styles.serviceToggles}>
+                        <TouchableOpacity style={[styles.serviceBtn, styles.serviceBtnActive]}>
+                            <Text style={{fontSize: 24, marginBottom: 4}}>🍔</Text>
+                            <Text style={styles.serviceTextActive}>Food</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.serviceBtn}>
+                            <View style={styles.timeBadge}><Text style={styles.timeBadgeText}>22 mins</Text></View>
+                            <Text style={{fontSize: 24, marginBottom: 4}}>🛒</Text>
+                            <Text style={styles.serviceText}>Instamart</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.serviceBtn}>
+                            <Text style={{fontSize: 24, marginBottom: 4}}>🍽️</Text>
+                            <Text style={styles.serviceText}>Dineout</Text>
+                        </TouchableOpacity>
+                    </View>
+                  </>
+              )}
+          </View>
 
-            {/* TABS */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
-                {TABS.map((tab) => (
-                    <TouchableOpacity key={tab} style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]} onPress={() => setActiveTab(tab)}>
-                        <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-                        {activeTab === tab && <View style={styles.tabActiveLine} />}
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </View>
+          {/* SEARCH & FILTERS (Sticky) */}
+          <View style={styles.stickySearchSection}>
+              <View style={styles.searchRow}>
+                  <View style={styles.searchBox}>
+                      <Text style={styles.searchIcon}>🔍</Text>
+                      <TextInput 
+                          style={styles.searchInput}
+                          placeholder={`${placeholderText}'`}
+                          placeholderTextColor="#888"
+                          value={searchQuery}
+                          onChangeText={setSearchQuery}
+                      />
+                      <View style={styles.searchDivider} />
+                      <Text style={styles.micIcon}>🎤</Text>
+                  </View>
+                  
+                  <View style={styles.vegToggleBox}>
+                      <Text style={styles.vegText}>VEG</Text>
+                      <Switch value={isVeg} onValueChange={setIsVeg} trackColor={{false: '#ccc', true: '#22c55e'}} thumbColor="#fff" />
+                  </View>
+              </View>
 
-        {/* 70% OFF BLUE HERO BANNER */}
-        <View style={styles.heroBlueBanner}>
-            <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={styles.floatingBurger} />
-            <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png'}} style={styles.floatingPizza} />
-            <View style={styles.heroTextCenter}>
-                <Text style={styles.heroText70}>70% OFF</Text>
-                <Text style={styles.heroTextUpTo}>UP TO ₹140</Text>
-            </View>
+              {/* TABS */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
+                  {TABS.map((tab) => (
+                      <TouchableOpacity key={tab} style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]} onPress={() => setActiveTab(tab)}>
+                          <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+                          {activeTab === tab && <View style={styles.tabActiveLine} />}
+                      </TouchableOpacity>
+                  ))}
+              </ScrollView>
+          </View>
 
-            {/* Yellow Offers Horizontal List */}
-            <FlatList 
-                data={YELLOW_OFFERS}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{paddingHorizontal: 15, paddingTop: 20}}
-                renderItem={renderYellowOffer}
-                keyExtractor={item => item.id}
-            />
-        </View>
+          {/* SKELETON LOADING STATE FOR MAIN CONTENT */}
+          {loading ? (
+              <View style={{padding: 15, marginTop: 10}}>
+                  <SkeletonLoader width={'100%'} height={200} borderRadius={20} style={{marginBottom: 20}} />
+                  <View style={{flexDirection: 'row', gap: 15, marginBottom: 30}}>
+                      <SkeletonLoader width={140} height={180} borderRadius={16} />
+                      <SkeletonLoader width={140} height={180} borderRadius={16} />
+                      <SkeletonLoader width={140} height={180} borderRadius={16} />
+                  </View>
+                  <View style={{flexDirection: 'row', gap: 15, marginBottom: 30}}>
+                      <SkeletonLoader width={80} height={80} borderRadius={40} />
+                      <SkeletonLoader width={80} height={80} borderRadius={40} />
+                      <SkeletonLoader width={80} height={80} borderRadius={40} />
+                  </View>
+                  <SkeletonLoader width={'100%'} height={250} borderRadius={20} />
+              </View>
+          ) : (
+              <>
+                  {/* 70% OFF BLUE HERO BANNER */}
+                  <View style={styles.heroBlueBanner}>
+                      <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={styles.floatingBurger} />
+                      <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png'}} style={styles.floatingPizza} />
+                      <View style={styles.heroTextCenter}>
+                          <Text style={styles.heroText70}>70% OFF</Text>
+                          <Text style={styles.heroTextUpTo}>UP TO ₹140</Text>
+                      </View>
 
-        {/* TOP RATED NEAR YOU */}
-        <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Top rated near you</Text>
-            <FlatList 
-                data={TOP_RATED}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{paddingRight: 15}}
-                renderItem={renderTopRated}
-                keyExtractor={item => item.id}
-            />
-        </View>
+                      <FlatList 
+                          data={YELLOW_OFFERS}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{paddingHorizontal: 15, paddingTop: 20}}
+                          renderItem={renderYellowOffer}
+                          keyExtractor={item => item.id}
+                      />
+                  </View>
 
-        {/* WHAT'S ON YOUR MIND? */}
-        <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>What's on your mind?</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mindScroll}>
-                {CATEGORIES.map(cat => (
-                    <TouchableOpacity key={cat.id} style={styles.mindItem}>
-                        <Image source={{uri: cat.img}} style={styles.mindImg} />
-                        <Text style={styles.mindText}>{cat.name}</Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </View>
+                  {/* TOP RATED NEAR YOU */}
+                  <View style={styles.sectionContainer}>
+                      <Text style={styles.sectionTitle}>Top rated near you</Text>
+                      <FlatList 
+                          data={TOP_RATED}
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={{paddingRight: 15}}
+                          renderItem={renderTopRated}
+                          keyExtractor={item => item.id}
+                      />
+                  </View>
 
-        {/* 99 STORE PROMO & FILTER PILLS */}
-        <View style={styles.filterPillsSection}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {FILTER_PILLS.map((pill, idx) => (
-                    <TouchableOpacity key={idx} style={styles.pillBtn}>
-                        <Text style={styles.pillText}>{pill}</Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-        </View>
+                  {/* WHAT'S ON YOUR MIND? */}
+                  <View style={styles.sectionContainer}>
+                      <Text style={styles.sectionTitle}>What's on your mind?</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mindScroll}>
+                          {CATEGORIES.map(cat => (
+                              <TouchableOpacity key={cat.id} style={styles.mindItem}>
+                                  <Image source={{uri: cat.img}} style={styles.mindImg} />
+                                  <Text style={styles.mindText}>{cat.name}</Text>
+                              </TouchableOpacity>
+                          ))}
+                      </ScrollView>
+                  </View>
 
-        {/* ALL RESTAURANTS */}
-        <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Top {restaurants.length} restaurants to explore</Text>
-            {loading ? (
-                <ActivityIndicator size="large" color="#fc8019" style={{marginTop: 40}} />
-            ) : (
-                <FlatList 
-                    data={restaurants}
-                    keyExtractor={(item: any) => item.id.toString()}
-                    renderItem={renderRestaurant}
-                    scrollEnabled={false}
-                />
-            )}
-        </View>
+                  {/* 99 STORE PROMO & FILTER PILLS */}
+                  <View style={styles.filterPillsSection}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                          {FILTER_PILLS.map((pill, idx) => (
+                              <TouchableOpacity key={idx} style={styles.pillBtn}>
+                                  <Text style={styles.pillText}>{pill}</Text>
+                              </TouchableOpacity>
+                          ))}
+                      </ScrollView>
+                  </View>
 
-      </ScrollView>
-    </SafeAreaView>
+                  {/* ALL RESTAURANTS */}
+                  <View style={styles.sectionContainer}>
+                      <Text style={styles.sectionTitle}>Top {restaurants.length} restaurants to explore</Text>
+                      <FlatList 
+                          data={restaurants}
+                          keyExtractor={(item: any) => item.id.toString()}
+                          renderItem={renderRestaurant}
+                          scrollEnabled={false}
+                      />
+                  </View>
+              </>
+          )}
+
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   
+  splashScreen: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fc8019', justifyContent: 'center', alignItems: 'center', zIndex: 9999 },
+  logoContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
+  logoText: { fontSize: 60, fontWeight: '900', color: '#fc8019', marginTop: -5 },
+
   blueHeaderSection: { backgroundColor: '#0a1024', paddingTop: Platform.OS === 'android' ? 40 : 20, paddingHorizontal: 15, paddingBottom: 15 },
   locationHeader: { marginBottom: 20 },
   locationTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
