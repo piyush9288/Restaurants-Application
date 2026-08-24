@@ -11,7 +11,7 @@ export default function RestaurantMenuScreen() {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { addToCart } = useCart();
+  const { cart, addToCart } = useCart();
 
   useEffect(() => {
     fetch(`${API_URL}/api/restaurants/${id}/menu`)
