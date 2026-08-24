@@ -42,6 +42,24 @@ export default function HomeScreen() {
   const placeholders = ["Search for pizza...", "Search for burgers...", "Search for biryani...", "Search for desserts..."];
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
 
+  // Auto-slide banner logic
+  const flatListRef = useRef<FlatList>(null);
+  const currentSlide = useRef(0);
+
+  useEffect(() => {
+    const slideInterval = setInterval(() => {
+      if (flatListRef.current) {
+        currentSlide.current = (currentSlide.current + 1) % BANNERS.length;
+        flatListRef.current.scrollToOffset({
+          offset: currentSlide.current * (width - 20),
+          animated: true,
+        });
+      }
+    }, 3000); // 3 seconds per slide
+
+    return () => clearInterval(slideInterval);
+  }, []);
+
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
@@ -262,11 +280,16 @@ export default function HomeScreen() {
         {/* Hero Banners */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
             <FlatList 
+                ref={flatListRef}
                 data={BANNERS}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 snapToInterval={width - 20}
                 decelerationRate="fast"
+                onMomentumScrollEnd={(e) => {
+                  const contentOffset = e.nativeEvent.contentOffset.x;
+                  currentSlide.current = Math.round(contentOffset / (width - 20));
+                }}
                 contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 25 }}
                 renderItem={renderBanner}
                 keyExtractor={item => item.id}
