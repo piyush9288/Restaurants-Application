@@ -482,9 +482,9 @@ const styles = StyleSheet.create({
 
   // HERO SECTION
   heroBlueBanner: { backgroundColor: '#0f172a', paddingTop: 35, paddingBottom: 25, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, shadowColor: '#000', shadowOffset: {width: 0, height: 10}, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
-  floatingBurger: { position: 'absolute', top: 25, left: 0, width: 85, height: 85, opacity: 0.9, resizeMode: 'contain' },
-  floatingPizza: { position: 'absolute', top: 15, right: 0, width: 95, height: 95, opacity: 0.9, resizeMode: 'contain' },
-  heroTextCenter: { alignItems: 'center', zIndex: 5, overflow: 'hidden', paddingHorizontal: 40 },
+  floatingBurger: { position: 'absolute', top: 25, left: '6%', width: 85, height: 85, opacity: 0.9, resizeMode: 'contain', zIndex: 1 },
+  floatingPizza: { position: 'absolute', top: 15, right: '6%', width: 95, height: 95, opacity: 0.9, resizeMode: 'contain', zIndex: 1 },
+  heroTextCenter: { alignItems: 'center', zIndex: 5, overflow: 'hidden', paddingHorizontal: '22%' },
   heroText70: { color: '#fff', fontSize: 34, fontWeight: '900', letterSpacing: 0, textShadowColor: '#f59e0b', textShadowOffset: {width: 1, height: 2}, textShadowRadius: 5 },
   heroTextUpTo: { color: '#fcd34d', fontSize: 11, fontWeight: '900', letterSpacing: 1.5, marginTop: 3, textAlign: 'center' },
   shineEffect: { position: 'absolute', top: -20, left: 0, width: 30, height: 150, backgroundColor: 'rgba(255,255,255,0.3)', transform: [{rotate: '20deg'}], zIndex: 10 },
