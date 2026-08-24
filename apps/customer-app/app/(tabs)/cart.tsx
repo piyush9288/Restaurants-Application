@@ -126,7 +126,7 @@ export default function CartScreen() {
 
       {cart.length === 0 ? (
         <Animated.View style={[styles.emptyContainer, { opacity: fadeAnim }]}>
-          <Text style={{fontSize: 80, marginBottom: 20}}>🛒</Text>
+          <Text style={{fontSize: 80, marginBottom: 20}}>🛍️</Text>
           <Text style={styles.emptyTitle}>Good food is always cooking!</Text>
           <Text style={styles.emptySub}>Your cart is empty. Add something from the menu.</Text>
           <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/')}>

@@ -43,7 +43,7 @@ export default function TabLayout() {
           title: 'Home',
           headerShown: false,
           tabBarIcon: ({ color }) => (
-             <SymbolView name={{ ios: 'house', android: 'house', web: 'house' }} tintColor={color} size={28} />
+             <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={color} size={26} />
           ),
         }}
       />
@@ -52,7 +52,7 @@ export default function TabLayout() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color }) => (
-             <SymbolView name={{ ios: 'list.bullet', android: 'list', web: 'list' }} tintColor={color} size={28} />
+             <SymbolView name={{ ios: 'doc.plaintext.fill', android: 'receipt_long', web: 'receipt_long' }} tintColor={color} size={26} />
           ),
         }}
       />
@@ -62,7 +62,7 @@ export default function TabLayout() {
           title: 'Cart',
           tabBarIcon: ({ color }) => (
             <View>
-                <SymbolView name={{ ios: 'cart', android: 'shopping-cart', web: 'shopping-cart' }} tintColor={color} size={28} />
+                <SymbolView name={{ ios: 'bag.fill', android: 'shopping_bag', web: 'shopping_bag' }} tintColor={color} size={26} />
                 {cartItemCount > 0 && (
                     <View style={styles.badge}>
                         <Text style={styles.badgeText}>{cartItemCount}</Text>
@@ -77,7 +77,7 @@ export default function TabLayout() {
         options={{
           title: 'Help',
           tabBarIcon: ({ color }) => (
-             <SymbolView name={{ ios: 'headphones', android: 'headset', web: 'headset' }} tintColor={color} size={28} />
+             <SymbolView name={{ ios: 'person.2.fill', android: 'support_agent', web: 'support_agent' }} tintColor={color} size={26} />
           ),
         }}
       />
