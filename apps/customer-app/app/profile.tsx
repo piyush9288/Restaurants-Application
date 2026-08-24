@@ -123,11 +123,11 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={{padding: 5}}>
-          <Text style={{fontSize: 24, fontWeight: 'bold'}}>←</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>My Profile</Text>
-        <View style={{width: 30}} />
+        <View style={{width: 40}} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -171,8 +171,10 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0f0f5' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, height: 60, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? 25 : 0, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.05, elevation: 3 },
-  title: { fontSize: 18, fontWeight: '800', color: '#1c1c1c' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, height: 65, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? 25 : 0, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.05, elevation: 3 },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f3f4f6', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  backButtonText: { fontSize: 20, fontWeight: 'bold', color: '#1c1c1c' },
+  title: { fontSize: 18, fontWeight: '800', color: '#1c1c1c', letterSpacing: 0.5 },
   content: { padding: 20 },
   avatarContainer: { alignItems: 'center', marginBottom: 30 },
   label: { fontSize: 14, fontWeight: '700', color: '#3e4152', marginBottom: 8 },

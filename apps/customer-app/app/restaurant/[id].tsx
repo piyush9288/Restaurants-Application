@@ -60,10 +60,10 @@ export default function RestaurantMenuScreen() {
       {/* Sticky Header */}
       <View style={styles.stickyHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={{fontSize: 24, fontWeight: 'bold'}}>←</Text>
+          <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{name}</Text>
-        <View style={{width: 30}} />
+        <View style={{width: 40}} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 80}}>
@@ -113,9 +113,10 @@ export default function RestaurantMenuScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fa' },
-  stickyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, height: 60, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? 25 : 0, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  backButton: { padding: 5 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1c1c1c' },
+  stickyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, height: 65, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? 25 : 0, borderBottomWidth: 1, borderBottomColor: '#eee', shadowColor: '#000', shadowOffset: {width:0, height:2}, shadowOpacity: 0.05, elevation: 3 },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f3f4f6', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  backButtonText: { fontSize: 20, fontWeight: 'bold', color: '#1c1c1c' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#1c1c1c', letterSpacing: 0.5 },
   
   heroContainer: { backgroundColor: '#fff', marginBottom: 10 },
   heroImage: { width: '100%', height: 200, resizeMode: 'cover' },
