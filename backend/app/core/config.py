@@ -12,10 +12,10 @@ class Settings(BaseSettings):
         # Get DB URL from env variable (Render provides DATABASE_URL)
         db_url = os.getenv("DATABASE_URL")
         if db_url:
-            # SQLAlchemy 2.0+ requires postgresql:// or postgresql+psycopg2://
-            # Sometimes Render gives postgres:// which SQLAlchemy complains about.
             if db_url.startswith("postgres://"):
-                db_url = db_url.replace("postgres://", "postgresql://", 1)
+                db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
+            elif db_url.startswith("postgresql://"):
+                db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
             return db_url
         return "postgresql+psycopg://food_user:food_password@localhost:5432/food_delivery"
 
