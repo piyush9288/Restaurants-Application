@@ -338,8 +338,8 @@ const Login = ({ onLoginSuccess }: { onLoginSuccess: (email: string) => void }) 
         
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontSize: '14px', fontWeight: '500' }}>Email Address</label>
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '10px 15px', borderRadius: '8px', border: '1px solid #d1d5db', boxSizing: 'border-box' }} />
+            <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontSize: '14px', fontWeight: '500' }}>Username / Email</label>
+            <input type="text" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '10px 15px', borderRadius: '8px', border: '1px solid #d1d5db', boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontSize: '14px', fontWeight: '500' }}>Password</label>
