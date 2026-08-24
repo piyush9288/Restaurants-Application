@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Image, TextInput, SafeAreaView, Platform } from 'react-native';
 import { Link, useRouter, useFocusEffect } from 'expo-router';
+import * as Location from 'expo-location';
 
 // @ts-ignore
 const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
@@ -27,15 +28,51 @@ export default function HomeScreen() {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       setIsAuthenticated(!!token);
       
-      if (token) {
-        fetch(API_URL + '/api/users/me/profile', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.pincode) setUserProfile(data);
-        }).catch(() => {});
-      }
+      const fetchProfileAndLocation = async () => {
+        let loadedProfile = null;
+        if (token) {
+          try {
+            const res = await fetch(API_URL + '/api/users/me/profile', {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data && data.pincode) {
+              loadedProfile = data;
+              setUserProfile(data);
+            }
+          } catch (e) {}
+        }
+        
+        // Auto-fetch GPS live location if on mobile
+        if (Platform.OS !== 'web') {
+            try {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status === 'granted') {
+                    const location = await Location.getCurrentPositionAsync({});
+                    const reverseGeocode = await Location.reverseGeocodeAsync({
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude
+                    });
+                    
+                    if (reverseGeocode && reverseGeocode.length > 0) {
+                        const loc = reverseGeocode[0];
+                        const livePincode = loc.postalCode || loadedProfile?.pincode;
+                        const liveAddress = `${loc.name ? loc.name + ', ' : ''}${loc.city ? loc.city : ''}`;
+                        
+                        setUserProfile(prev => ({
+                            ...(prev || {}),
+                            pincode: livePincode,
+                            address: liveAddress || prev?.address
+                        }));
+                    }
+                }
+            } catch (e) {
+                console.log("GPS fetch failed silently", e);
+            }
+        }
+      };
+
+      fetchProfileAndLocation();
     }, [])
   );
 
