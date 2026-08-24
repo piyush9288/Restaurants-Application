@@ -200,11 +200,15 @@ export default function HomeScreen() {
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput 
             style={styles.searchInput} 
-            placeholder="Restaurant name or dish..." 
-            placeholderTextColor="#888"
+            placeholder="Search for restaurants, cuisines, or dishes..." 
+            placeholderTextColor="#9ca3af"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          <View style={styles.searchDivider} />
+          <TouchableOpacity>
+            <Text style={styles.micIcon}>🎤</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Categories */}
@@ -275,9 +279,11 @@ const styles = StyleSheet.create({
   loginBtn: { backgroundColor: '#111827', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.15, shadowRadius: 5, elevation: 4 },
   loginBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f0f5', marginHorizontal: 15, paddingHorizontal: 15, borderRadius: 12, height: 50, marginBottom: 20 },
-  searchIcon: { fontSize: 18, marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, color: '#333' },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', marginHorizontal: 20, paddingHorizontal: 15, borderRadius: 16, height: 55, marginTop: 15, marginBottom: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 15, elevation: 5, borderWidth: 1, borderColor: '#f3f4f6' },
+  searchIcon: { fontSize: 20, marginRight: 10, color: '#fc8019' },
+  searchInput: { flex: 1, fontSize: 14, fontWeight: '500', color: '#111827' },
+  searchDivider: { width: 1, height: 25, backgroundColor: '#e5e7eb', marginHorizontal: 15 },
+  micIcon: { fontSize: 18, color: '#fc8019' },
   
   sectionContainer: { marginHorizontal: 15, marginBottom: 20 },
   sectionTitle: { fontSize: 20, fontWeight: '900', color: '#1c1c1c', marginBottom: 15, letterSpacing: -0.5 },
