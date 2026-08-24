@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
+const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
+
 
 export default function OrdersScreen() {
   const [orders, setOrders] = useState([]);
@@ -17,7 +19,7 @@ export default function OrdersScreen() {
       }
 
       setLoading(true);
-      fetch('http://127.0.0.1:8000/api/orders/', {
+      fetch(API_URL + '/api/orders/', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

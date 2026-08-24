@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
+
 
 export default function RestaurantDashboard() {
   const [orders, setOrders] = useState([]);
@@ -13,7 +15,7 @@ export default function RestaurantDashboard() {
     const token = getToken();
     if (!token) return;
 
-    fetch('http://127.0.0.1:8000/api/orders/', {
+    fetch(API_URL + '/api/orders/', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -37,7 +39,7 @@ export default function RestaurantDashboard() {
   }, []);
 
   const updateStatus = (orderId: number, status: string) => {
-    fetch(`http://127.0.0.1:8000/api/orders/${orderId}/status?status=${status}`, {
+    fetch(`${API_URL}/api/orders/${orderId}/status?status=${status}`, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${getToken()}` }
     }).then(() => fetchOrders());

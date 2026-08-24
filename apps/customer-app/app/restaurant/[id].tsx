@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCart } from '../CartContext';
+const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
+
 
 export default function RestaurantMenuScreen() {
   const { id, name } = useLocalSearchParams();
@@ -11,7 +13,7 @@ export default function RestaurantMenuScreen() {
   const { addToCart, cart } = useCart();
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/restaurants/${id}/menu`)
+    fetch(`${API_URL}/api/restaurants/${id}/menu`)
       .then(res => res.json())
       .then(data => {
         setMenuItems(data);

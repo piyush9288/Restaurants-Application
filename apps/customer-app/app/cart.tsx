@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useCart } from './CartContext';
+const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
+
 
 export default function CartScreen() {
   const { cart, clearCart, restaurantId } = useCart();
@@ -29,7 +31,7 @@ export default function CartScreen() {
         }))
       };
 
-      const response = await fetch('http://127.0.0.1:8000/api/orders/', {
+      const response = await fetch(API_URL + '/api/orders/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

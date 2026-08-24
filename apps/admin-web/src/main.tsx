@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
+const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
+
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('restaurants');
@@ -10,7 +12,7 @@ const AdminDashboard = () => {
 
   const fetchData = () => {
     setLoading(true);
-    fetch(`http://127.0.0.1:8000/api/${activeTab}/`)
+    fetch(`${API_URL}/api/${activeTab}/`)
       .then(res => res.json())
       .then(resData => {
         if (Array.isArray(resData)) {

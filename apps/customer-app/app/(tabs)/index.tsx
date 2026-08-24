@@ -4,6 +4,8 @@ import { Link, useRouter } from 'expo-router';
 
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
+const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
+
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState([]);
@@ -21,7 +23,7 @@ export default function HomeScreen() {
   );
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/restaurants/')
+    fetch(API_URL + '/api/restaurants/')
       .then((response) => response.json())
       .then((data) => {
         setRestaurants(data);

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -15,7 +17,7 @@ export default function LoginScreen() {
       formData.append('username', email);
       formData.append('password', password);
       
-      const response = await fetch('http://127.0.0.1:8000/api/auth/login/access-token', {
+      const response = await fetch(API_URL + '/api/auth/login/access-token', {
         method: 'POST',
         body: formData,
       });
