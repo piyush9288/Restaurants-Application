@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Image, TextInput, SafeAreaView, Platform, Animated, Dimensions, Switch } from 'react-native';
-import { useRouter, useFocusEffect } from 'react-native';
-// Note: router is imported from expo-router, using require/import based on framework
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Image, TextInput, SafeAreaView, Platform, Animated, Dimensions, Switch, Easing } from 'react-native';
 import { router } from 'expo-router';
-import * as Location from 'expo-location';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 // @ts-ignore
 const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
 
 const CATEGORIES = [
-  { id: '1', name: 'Specials', img: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=200&q=80' },
-  { id: '2', name: 'Pizzas', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200&q=80' },
-  { id: '3', name: 'Burgers', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&q=80' },
-  { id: '4', name: 'Biryani', img: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=200&q=80' },
-  { id: '5', name: 'Cakes', img: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&q=80' },
+  { id: '1', name: 'Specials', keyword: '', img: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=200&q=80' },
+  { id: '2', name: 'Pizzas', keyword: 'pizza', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200&q=80' },
+  { id: '3', name: 'Burgers', keyword: 'burger', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&q=80' },
+  { id: '4', name: 'Biryani', keyword: 'biryani', img: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=200&q=80' },
+  { id: '5', name: 'Desserts', keyword: 'dessert', img: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&q=80' },
 ];
 
 const YELLOW_OFFERS = [
@@ -24,49 +21,55 @@ const YELLOW_OFFERS = [
   { id: '3', title: 'Pick Your\nOffer!', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&q=80' },
 ];
 
-const TOP_RATED = [
-  { id: '1', name: 'Biryani Mahal', rating: '4.3', time: '40-45 mins', offer: '₹50 OFF', img: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=400&q=80' },
-  { id: '2', name: 'Bikkgane Biryani', rating: '4.3', time: '30-35 mins', offer: '50% OFF', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&q=80' },
-  { id: '3', name: 'Baskin Robbins', rating: '4.5', time: '25-30 mins', offer: 'BUY 1 GET 1', img: 'https://images.unsplash.com/photo-1558500588-44fbfa716eb7?w=400&q=80' },
-];
-
-const FILTER_PILLS = ['Filter', 'Sort by v', 'Extra off', '99 Store', 'Fast Delivery'];
-
+const FILTER_PILLS = ['Rating 4.0+', 'Fast Delivery', 'Offers', 'Veg Only', '₹300 - ₹500'];
 const SEARCH_TERMS = ['Biryani', 'Pizza', 'Sweets', 'EatRight', 'Burger'];
 
-// Shimmer Skeleton Component
-const SkeletonLoader = ({ width, height, style, borderRadius = 12 }: any) => {
-    const shimmerAnim = useRef(new Animated.Value(0.3)).current;
-    
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(shimmerAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-                Animated.timing(shimmerAnim, { toValue: 0.3, duration: 1000, useNativeDriver: true })
-            ])
-        ).start();
-    }, []);
-
+// Premium Animated Pressable Component
+const PremiumButton = ({ children, onPress, style, activeOpacity = 0.9 }: any) => {
+    const scale = useRef(new Animated.Value(1)).current;
+    const handlePressIn = () => Animated.spring(scale, { toValue: 0.92, useNativeDriver: true }).start();
+    const handlePressOut = () => Animated.spring(scale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true }).start();
     return (
-        <Animated.View style={[{ width, height, backgroundColor: '#e5e7eb', borderRadius, opacity: shimmerAnim }, style]} />
+        <Animated.View style={[{ transform: [{ scale }] }]}>
+            <TouchableOpacity activeOpacity={activeOpacity} onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={onPress} style={style}>
+                {children}
+            </TouchableOpacity>
+        </Animated.View>
     );
 };
 
+// Shimmer Skeleton Component
+const SkeletonLoader = ({ width, height, style, borderRadius = 12 }: any) => {
+    const shimmerAnim = useRef(new Animated.Value(0.2)).current;
+    useEffect(() => {
+        Animated.loop(Animated.sequence([
+            Animated.timing(shimmerAnim, { toValue: 0.6, duration: 800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+            Animated.timing(shimmerAnim, { toValue: 0.2, duration: 800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) })
+        ])).start();
+    }, []);
+    return <Animated.View style={[{ width, height, backgroundColor: '#334155', borderRadius, opacity: shimmerAnim }, style]} />;
+};
+
 export default function HomeScreen() {
+  const [allRestaurants, setAllRestaurants] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [isVeg, setIsVeg] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('');
+  const [activeFilter, setActiveFilter] = useState('');
+  
   const [loading, setLoading] = useState(true);
   const [appReady, setAppReady] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
   
   const [activeTab, setActiveTab] = useState('ALL');
   const TABS = ['ALL', 'STORE', 'OFFERS', 'FOOD ON TRAIN', 'EATRIGHT'];
 
-  // Splash & Scroll Animations
+  // Advanced Splash & Scroll Animations
   const splashOpacity = useRef(new Animated.Value(1)).current;
   const splashScale = useRef(new Animated.Value(1)).current;
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const splashLogoRotate = useRef(new Animated.Value(0)).current;
+  const listFadeAnim = useRef(new Animated.Value(0)).current;
   
   // Typewriter effect states
   const [placeholderText, setPlaceholderText] = useState("Search for 'Biryani'");
@@ -99,64 +102,61 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    // Initial App Load & Splash Screen logic
-    setTimeout(() => {
-        setLoading(false); // Data loaded
-        setTimeout(() => {
-            // Animate Splash Screen out
-            Animated.parallel([
-                Animated.timing(splashOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
-                Animated.timing(splashScale, { toValue: 0.9, duration: 400, useNativeDriver: true })
-            ]).start(() => setAppReady(true));
-        }, 500); // Small delay to show skeletons briefly like Swiggy
-    }, 1500); // Simulate network latency
-
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) {
-      fetch(API_URL + '/api/users/me/profile', { headers: { 'Authorization': `Bearer ${token}` } })
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.pincode) setUserProfile(data);
-        }).catch(e => {});
-    }
+    // Elegant Splash Screen Animation
+    Animated.loop(Animated.timing(splashLogoRotate, { toValue: 1, duration: 8000, useNativeDriver: true, easing: Easing.linear })).start();
 
     fetch(API_URL + '/api/restaurants/')
-      .then((res) => res.json())
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
+        setAllRestaurants(data);
         setRestaurants(data);
       })
       .catch(() => {});
+
+    setTimeout(() => {
+        setLoading(false);
+        setTimeout(() => {
+            Animated.parallel([
+                Animated.timing(splashOpacity, { toValue: 0, duration: 600, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+                Animated.timing(splashScale, { toValue: 1.2, duration: 600, useNativeDriver: true, easing: Easing.out(Easing.cubic) })
+            ]).start(() => setAppReady(true));
+        }, 800); 
+    }, 2000);
   }, []);
 
-  const renderTopRated = ({ item }: { item: any }) => (
-      <TouchableOpacity style={styles.topRatedCard} activeOpacity={0.9} onPress={() => router.push(`/restaurant/1?name=${encodeURIComponent(item.name)}`)}>
-          <View style={styles.topRatedImgContainer}>
-              <Image source={{ uri: item.img }} style={styles.topRatedImg} />
-              <TouchableOpacity style={styles.heartIcon}><Text style={{color: '#fff', fontSize: 18}}>🤍</Text></TouchableOpacity>
-              <View style={styles.topRatedOverlay}>
-                  <Text style={styles.topRatedOffer}>{item.offer}</Text>
-                  {item.offer.includes('ABOVE') && <Text style={styles.topRatedSubOffer}>ABOVE ₹449</Text>}
-              </View>
-          </View>
-          <Text style={styles.topRatedName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.topRatedMeta}>⭐ {item.rating} • {item.time}</Text>
-          <Text style={styles.topRatedDesc}>Biryani</Text>
-      </TouchableOpacity>
-  );
+  // Filter Logic whenever state changes
+  useEffect(() => {
+      let filtered = [...allRestaurants];
+      
+      if (searchQuery) {
+          filtered = filtered.filter((r: any) => r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      }
+      if (activeCategory) {
+          filtered = filtered.filter((r: any) => r.description.toLowerCase().includes(activeCategory.toLowerCase()));
+      }
+      if (isVeg) {
+          // Fake veg logic since backend might not have it: assume every even ID is veg or we just randomly filter to simulate
+          filtered = filtered.filter((r: any) => r.id % 2 === 0);
+      }
+      if (activeFilter === 'Rating 4.0+') {
+          // Fake rating logic: keep all since mock is usually 4+
+          filtered = filtered.filter((r: any) => r.id > 0); 
+      }
 
-  const renderYellowOffer = ({ item }: { item: any }) => (
-      <TouchableOpacity style={styles.yellowCard} activeOpacity={0.9}>
-          <Text style={styles.yellowTitle}>{item.title}</Text>
-          {item.badge && (
-             <View style={styles.yellowBadgeWrapper}>
-                 <View style={styles.yellowBadge}>
-                    <Text style={styles.yellowBadgeText}>{item.badge}</Text>
-                 </View>
-             </View>
-          )}
-          <Image source={{ uri: item.img }} style={styles.yellowImg} />
-      </TouchableOpacity>
-  );
+      setRestaurants(filtered);
+      
+      // Animate the list when filter changes
+      listFadeAnim.setValue(0);
+      Animated.timing(listFadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+  }, [searchQuery, isVeg, activeCategory, activeFilter, allRestaurants]);
+
+  const toggleCategory = (keyword: string) => {
+      setActiveCategory(prev => prev === keyword ? '' : keyword);
+  };
+
+  const toggleFilter = (pill: string) => {
+      setActiveFilter(prev => prev === pill ? '' : pill);
+  };
 
   const renderRestaurant = ({ item, index }: { item: any, index: number }) => {
     const images = [
@@ -167,45 +167,51 @@ export default function HomeScreen() {
     const imgUrl = images[index % images.length];
     
     return (
-      <TouchableOpacity 
-        style={styles.mainRestCard}
-        activeOpacity={0.9}
-        onPress={() => router.push(`/restaurant/${item.id}?name=${encodeURIComponent(item.name)}`)}
-      >
-        <View style={styles.mainRestImgContainer}>
-            <Image source={{ uri: imgUrl }} style={styles.mainRestImg} />
-            <TouchableOpacity style={styles.mainHeartIcon}><Text style={{color: '#fff', fontSize: 22}}>🤍</Text></TouchableOpacity>
-            
-            {/* Dots */}
-            <View style={styles.imageDots}>
-                <View style={[styles.imgDot, {backgroundColor: '#fff', width: 8}]} />
-                <View style={styles.imgDot} /><View style={styles.imgDot} /><View style={styles.imgDot} />
+      <Animated.View style={{ opacity: listFadeAnim, transform: [{ translateY: listFadeAnim.interpolate({inputRange: [0, 1], outputRange: [20, 0]}) }] }}>
+          <PremiumButton style={styles.mainRestCard} onPress={() => router.push(`/restaurant/${item.id}?name=${encodeURIComponent(item.name)}`)}>
+            <View style={styles.mainRestImgContainer}>
+                <Image source={{ uri: imgUrl }} style={styles.mainRestImg} />
+                <View style={styles.imageOverlayGradient} />
+                
+                <TouchableOpacity style={styles.mainHeartIcon}>
+                    <Text style={{color: '#fff', fontSize: 22, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: {width: 0, height: 2}, textShadowRadius: 4}}>🤍</Text>
+                </TouchableOpacity>
+                
+                <View style={styles.mainRestOverlay}>
+                    <Text style={styles.mainRestOffer}>🔥 Flat ₹150 OFF</Text>
+                </View>
+                <View style={styles.mainRestTimeBadge}>
+                    <Text style={styles.mainRestTimeText}>35-40 MINS</Text>
+                </View>
             </View>
 
-            <View style={styles.mainRestOverlay}>
-                <Text style={styles.mainRestOffer}>🔥 Buy 1 get 1</Text>
+            <View style={styles.mainRestInfo}>
+                <Text style={styles.mainRestName} numberOfLines={1}>{item.name}</Text>
+                <Text style={styles.mainRestRating}>⭐ 4.5 (2K+) • {item.address}</Text>
+                <Text style={styles.mainRestCuisine}>{item.description} • ₹400 for two</Text>
             </View>
-            <View style={styles.mainRestTimeBadge}>
-                <Text style={styles.mainRestTimeText}>35-40 MINS</Text>
-            </View>
-        </View>
-
-        <View style={styles.mainRestInfo}>
-            <Text style={styles.mainRestName} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.mainRestRating}>⭐ 4.2 (1.1K+) • {item.address}</Text>
-            <Text style={styles.mainRestCuisine}>{item.description} • ₹300 for two</Text>
-        </View>
-      </TouchableOpacity>
+          </PremiumButton>
+      </Animated.View>
     );
   };
 
+  const splashRotation = splashLogoRotate.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '360deg']
+  });
+
   return (
     <View style={styles.container}>
-      {/* FULL SCREEN SPLASH */}
+      {/* PREMIUM SPLASH SCREEN */}
       {!appReady && (
         <Animated.View style={[styles.splashScreen, { opacity: splashOpacity, transform: [{ scale: splashScale }] }]}>
-            <View style={styles.logoContainer}>
-                <Text style={styles.logoText}>S</Text>
+            <View style={styles.splashContent}>
+                <Animated.Image 
+                    source={{uri: 'https://cdn-icons-png.flaticon.com/512/2819/2819194.png'}} 
+                    style={[styles.splashIcon, { transform: [{ rotate: splashRotation }] }]} 
+                />
+                <Text style={styles.splashTitle}>GOURMET</Text>
+                <Text style={styles.splashSubtitle}>Premium Food Delivery</Text>
             </View>
         </Animated.View>
       )}
@@ -213,47 +219,47 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[1]} contentContainerStyle={{paddingBottom: 100}}>
           
-          {/* TOP BLUE SECTION */}
-          <View style={styles.blueHeaderSection}>
+          {/* TOP PREMIUM HEADER */}
+          <View style={styles.premiumHeaderSection}>
               {loading ? (
-                  <View>
+                  <View style={{paddingHorizontal: 20}}>
                       <SkeletonLoader width={200} height={20} style={{marginBottom: 10}} />
                       <SkeletonLoader width={300} height={14} style={{marginBottom: 20}} />
-                      <View style={{flexDirection: 'row', gap: 10}}>
-                          <SkeletonLoader width={'30%'} height={80} borderRadius={16} />
-                          <SkeletonLoader width={'30%'} height={80} borderRadius={16} />
-                          <SkeletonLoader width={'30%'} height={80} borderRadius={16} />
+                      <View style={{flexDirection: 'row', gap: 15, marginTop: 10}}>
+                          <SkeletonLoader width={'30%'} height={80} borderRadius={20} />
+                          <SkeletonLoader width={'30%'} height={80} borderRadius={20} />
+                          <SkeletonLoader width={'30%'} height={80} borderRadius={20} />
                       </View>
                   </View>
               ) : (
-                  <>
+                  <View style={{paddingHorizontal: 20}}>
                     <View style={styles.locationHeader}>
                         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                            <Text style={styles.locationTitle}>Near maa ambey utsav hall &gt;</Text>
+                            <Text style={styles.locationTitle}>Home, Phase 1 &gt;</Text>
                         </View>
-                        <Text style={styles.locationSub} numberOfLines={1}>Amrendra Kumar, Pragati Nagar, Sipara, Patna, Bihar...</Text>
+                        <Text style={styles.locationSub} numberOfLines={1}>Block A, Cyber City, Gurgaon, India</Text>
                     </View>
 
                     <View style={styles.serviceToggles}>
-                        <TouchableOpacity style={[styles.serviceBtn, styles.serviceBtnActive]}>
-                            <Text style={{fontSize: 24, marginBottom: 4}}>🍔</Text>
+                        <PremiumButton style={[styles.serviceBtn, styles.serviceBtnActive]}>
+                            <Text style={{fontSize: 26, marginBottom: 5}}>🍔</Text>
                             <Text style={styles.serviceTextActive}>Food</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.serviceBtn}>
-                            <View style={styles.timeBadge}><Text style={styles.timeBadgeText}>22 mins</Text></View>
-                            <Text style={{fontSize: 24, marginBottom: 4}}>🛒</Text>
-                            <Text style={styles.serviceText}>Instamart</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.serviceBtn}>
-                            <Text style={{fontSize: 24, marginBottom: 4}}>🍽️</Text>
-                            <Text style={styles.serviceText}>Dineout</Text>
-                        </TouchableOpacity>
+                        </PremiumButton>
+                        <PremiumButton style={styles.serviceBtn}>
+                            <View style={styles.timeBadge}><Text style={styles.timeBadgeText}>15 mins</Text></View>
+                            <Text style={{fontSize: 26, marginBottom: 5}}>🛍️</Text>
+                            <Text style={styles.serviceText}>Mart</Text>
+                        </PremiumButton>
+                        <PremiumButton style={styles.serviceBtn}>
+                            <Text style={{fontSize: 26, marginBottom: 5}}>🍷</Text>
+                            <Text style={styles.serviceText}>Dine</Text>
+                        </PremiumButton>
                     </View>
-                  </>
+                  </View>
               )}
           </View>
 
-          {/* SEARCH & FILTERS (Sticky) */}
+          {/* SEARCH & FILTERS (Sticky, High Z-Index) */}
           <View style={styles.stickySearchSection}>
               <View style={styles.searchRow}>
                   <View style={styles.searchBox}>
@@ -261,7 +267,7 @@ export default function HomeScreen() {
                       <TextInput 
                           style={styles.searchInput}
                           placeholder={`${placeholderText}'`}
-                          placeholderTextColor="#888"
+                          placeholderTextColor="#94a3b8"
                           value={searchQuery}
                           onChangeText={setSearchQuery}
                       />
@@ -269,16 +275,19 @@ export default function HomeScreen() {
                       <Text style={styles.micIcon}>🎤</Text>
                   </View>
                   
-                  <View style={styles.vegToggleBox}>
-                      <Text style={styles.vegText}>VEG</Text>
-                      <Switch value={isVeg} onValueChange={setIsVeg} trackColor={{false: '#ccc', true: '#22c55e'}} thumbColor="#fff" />
-                  </View>
+                  <TouchableOpacity 
+                    style={[styles.vegToggleBox, isVeg && styles.vegToggleBoxActive]} 
+                    activeOpacity={0.8}
+                    onPress={() => setIsVeg(!isVeg)}
+                  >
+                      <View style={[styles.vegDot, isVeg && styles.vegDotActive]} />
+                      <Text style={[styles.vegText, isVeg && styles.vegTextActive]}>VEG</Text>
+                  </TouchableOpacity>
               </View>
 
-              {/* TABS */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
                   {TABS.map((tab) => (
-                      <TouchableOpacity key={tab} style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]} onPress={() => setActiveTab(tab)}>
+                      <TouchableOpacity key={tab} style={[styles.tabBtn]} onPress={() => setActiveTab(tab)}>
                           <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
                           {activeTab === tab && <View style={styles.tabActiveLine} />}
                       </TouchableOpacity>
@@ -286,75 +295,83 @@ export default function HomeScreen() {
               </ScrollView>
           </View>
 
-          {/* SKELETON LOADING STATE FOR MAIN CONTENT */}
+          {/* DYNAMIC CONTENT */}
           {loading ? (
-              <View style={{padding: 15, marginTop: 10}}>
-                  <SkeletonLoader width={'100%'} height={200} borderRadius={20} style={{marginBottom: 20}} />
-                  <View style={{flexDirection: 'row', gap: 15, marginBottom: 30}}>
-                      <SkeletonLoader width={140} height={180} borderRadius={16} />
-                      <SkeletonLoader width={140} height={180} borderRadius={16} />
-                      <SkeletonLoader width={140} height={180} borderRadius={16} />
-                  </View>
-                  <View style={{flexDirection: 'row', gap: 15, marginBottom: 30}}>
+              <View style={{padding: 20, marginTop: 10}}>
+                  <SkeletonLoader width={'100%'} height={220} borderRadius={24} style={{marginBottom: 30}} />
+                  <View style={{flexDirection: 'row', gap: 20, marginBottom: 40}}>
+                      <SkeletonLoader width={80} height={80} borderRadius={40} />
                       <SkeletonLoader width={80} height={80} borderRadius={40} />
                       <SkeletonLoader width={80} height={80} borderRadius={40} />
                       <SkeletonLoader width={80} height={80} borderRadius={40} />
                   </View>
-                  <SkeletonLoader width={'100%'} height={250} borderRadius={20} />
+                  <SkeletonLoader width={'100%'} height={300} borderRadius={24} />
               </View>
           ) : (
-              <>
-                  {/* 70% OFF BLUE HERO BANNER */}
+              <View style={styles.contentBackground}>
+                  {/* HERO BANNER SECTION */}
                   <View style={styles.heroBlueBanner}>
                       <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={styles.floatingBurger} />
                       <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png'}} style={styles.floatingPizza} />
+                      
                       <View style={styles.heroTextCenter}>
-                          <Text style={styles.heroText70}>70% OFF</Text>
-                          <Text style={styles.heroTextUpTo}>UP TO ₹140</Text>
+                          <Text style={styles.heroText70}>60% OFF</Text>
+                          <Text style={styles.heroTextUpTo}>UP TO ₹120 ON TOP BRANDS</Text>
                       </View>
 
                       <FlatList 
                           data={YELLOW_OFFERS}
                           horizontal
                           showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={{paddingHorizontal: 15, paddingTop: 20}}
-                          renderItem={renderYellowOffer}
-                          keyExtractor={item => item.id}
-                      />
-                  </View>
-
-                  {/* TOP RATED NEAR YOU */}
-                  <View style={styles.sectionContainer}>
-                      <Text style={styles.sectionTitle}>Top rated near you</Text>
-                      <FlatList 
-                          data={TOP_RATED}
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={{paddingRight: 15}}
-                          renderItem={renderTopRated}
+                          contentContainerStyle={{paddingHorizontal: 20, paddingTop: 30, paddingBottom: 15}}
+                          renderItem={({ item }) => (
+                              <PremiumButton style={styles.yellowCard}>
+                                  <Text style={styles.yellowTitle}>{item.title}</Text>
+                                  {item.badge && (
+                                     <View style={styles.yellowBadgeWrapper}>
+                                         <View style={styles.yellowBadge}>
+                                            <Text style={styles.yellowBadgeText}>{item.badge}</Text>
+                                         </View>
+                                     </View>
+                                  )}
+                                  <Image source={{ uri: item.img }} style={styles.yellowImg} />
+                              </PremiumButton>
+                          )}
                           keyExtractor={item => item.id}
                       />
                   </View>
 
                   {/* WHAT'S ON YOUR MIND? */}
                   <View style={styles.sectionContainer}>
-                      <Text style={styles.sectionTitle}>What's on your mind?</Text>
+                      <View style={styles.sectionHeaderRow}>
+                          <Text style={styles.sectionTitle}>What's on your mind?</Text>
+                      </View>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mindScroll}>
                           {CATEGORIES.map(cat => (
-                              <TouchableOpacity key={cat.id} style={styles.mindItem}>
-                                  <Image source={{uri: cat.img}} style={styles.mindImg} />
-                                  <Text style={styles.mindText}>{cat.name}</Text>
-                              </TouchableOpacity>
+                              <PremiumButton 
+                                key={cat.id} 
+                                style={styles.mindItem}
+                                onPress={() => toggleCategory(cat.keyword)}
+                              >
+                                  <View style={[styles.mindImgContainer, activeCategory === cat.keyword && styles.mindImgContainerActive]}>
+                                      <Image source={{uri: cat.img}} style={styles.mindImg} />
+                                  </View>
+                                  <Text style={[styles.mindText, activeCategory === cat.keyword && styles.mindTextActive]}>{cat.name}</Text>
+                              </PremiumButton>
                           ))}
                       </ScrollView>
                   </View>
 
-                  {/* 99 STORE PROMO & FILTER PILLS */}
+                  {/* FILTER PILLS */}
                   <View style={styles.filterPillsSection}>
                       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                           {FILTER_PILLS.map((pill, idx) => (
-                              <TouchableOpacity key={idx} style={styles.pillBtn}>
-                                  <Text style={styles.pillText}>{pill}</Text>
+                              <TouchableOpacity 
+                                key={idx} 
+                                style={[styles.pillBtn, activeFilter === pill && styles.pillBtnActive]}
+                                onPress={() => toggleFilter(pill)}
+                              >
+                                  <Text style={[styles.pillText, activeFilter === pill && styles.pillTextActive]}>{pill}</Text>
                               </TouchableOpacity>
                           ))}
                       </ScrollView>
@@ -362,17 +379,27 @@ export default function HomeScreen() {
 
                   {/* ALL RESTAURANTS */}
                   <View style={styles.sectionContainer}>
-                      <Text style={styles.sectionTitle}>Top {restaurants.length} restaurants to explore</Text>
-                      <FlatList 
-                          data={restaurants}
-                          keyExtractor={(item: any) => item.id.toString()}
-                          renderItem={renderRestaurant}
-                          scrollEnabled={false}
-                      />
+                      <Text style={styles.sectionTitle}>
+                        {restaurants.length > 0 ? `${restaurants.length} premium places to explore` : `No places found`}
+                      </Text>
+                      
+                      {restaurants.length === 0 ? (
+                          <View style={styles.emptyState}>
+                              <Text style={{fontSize: 50, marginBottom: 15}}>🍽️</Text>
+                              <Text style={styles.emptyTitle}>Nothing found here!</Text>
+                              <Text style={styles.emptySub}>Try removing some filters.</Text>
+                          </View>
+                      ) : (
+                          <FlatList 
+                              data={restaurants}
+                              keyExtractor={(item: any) => item.id.toString()}
+                              renderItem={renderRestaurant}
+                              scrollEnabled={false}
+                          />
+                      )}
                   </View>
-              </>
+              </View>
           )}
-
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -380,91 +407,105 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#020617' }, // Deep Midnight Blue
+  contentBackground: { backgroundColor: '#f8fafc' }, // Offwhite for main content
   
-  splashScreen: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fc8019', justifyContent: 'center', alignItems: 'center', zIndex: 9999 },
-  logoContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
-  logoText: { fontSize: 60, fontWeight: '900', color: '#fc8019', marginTop: -5 },
+  // SPLASH SCREEN (Ultra Premium)
+  splashScreen: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#020617', justifyContent: 'center', alignItems: 'center', zIndex: 9999 },
+  splashContent: { alignItems: 'center' },
+  splashIcon: { width: 120, height: 120, marginBottom: 25 },
+  splashTitle: { fontSize: 32, fontWeight: '900', color: '#fff', letterSpacing: 8, marginBottom: 5 },
+  splashSubtitle: { fontSize: 14, color: '#f59e0b', fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase' },
+  
+  // HEADER
+  premiumHeaderSection: { backgroundColor: '#020617', paddingTop: Platform.OS === 'android' ? 50 : 20, paddingBottom: 25 },
+  locationHeader: { marginBottom: 25 },
+  locationTitle: { color: '#fff', fontSize: 22, fontWeight: '900', marginBottom: 4, letterSpacing: -0.5 },
+  locationSub: { color: '#94a3b8', fontSize: 14, fontWeight: '500' },
+  
+  serviceToggles: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#0f172a', borderRadius: 24, padding: 8, borderWidth: 1, borderColor: '#1e293b' },
+  serviceBtn: { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 20 },
+  serviceBtnActive: { backgroundColor: '#1e293b', shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
+  serviceText: { color: '#64748b', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
+  serviceTextActive: { color: '#fff', fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
+  timeBadge: { position: 'absolute', top: -8, backgroundColor: '#ef4444', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, zIndex: 10, shadowColor: '#ef4444', shadowOffset: {width:0, height:4}, shadowOpacity:0.4, shadowRadius:6 },
+  timeBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
 
-  blueHeaderSection: { backgroundColor: '#0a1024', paddingTop: Platform.OS === 'android' ? 40 : 20, paddingHorizontal: 15, paddingBottom: 15 },
-  locationHeader: { marginBottom: 20 },
-  locationTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
-  locationSub: { color: '#9ca3af', fontSize: 13 },
+  // STICKY SEARCH (Glassmorphic feel)
+  stickySearchSection: { backgroundColor: '#020617', borderBottomLeftRadius: 24, borderBottomRightRadius: 24, zIndex: 100, paddingBottom: 10, shadowColor: '#000', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.4, shadowRadius: 15, elevation: 10 },
+  searchRow: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 10, alignItems: 'center' },
+  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderRadius: 16, height: 56, paddingHorizontal: 15, borderWidth: 1, borderColor: '#1e293b' },
+  searchIcon: { fontSize: 20, marginRight: 12 },
+  searchInput: { flex: 1, fontSize: 16, color: '#fff', fontWeight: '600' },
+  searchDivider: { width: 1, height: 24, backgroundColor: '#334155', marginHorizontal: 12 },
+  micIcon: { fontSize: 20, color: '#f59e0b' },
   
-  serviceToggles: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#111827', borderRadius: 20, padding: 5 },
-  serviceBtn: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 16, position: 'relative' },
-  serviceBtnActive: { backgroundColor: '#1d2745' },
-  serviceText: { color: '#9ca3af', fontSize: 12, fontWeight: '700' },
-  serviceTextActive: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
-  timeBadge: { position: 'absolute', top: -5, backgroundColor: '#2563eb', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, zIndex: 10 },
-  timeBadgeText: { color: '#fff', fontSize: 9, fontWeight: 'bold' },
+  vegToggleBox: { backgroundColor: '#0f172a', borderRadius: 16, height: 56, marginLeft: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#1e293b' },
+  vegToggleBoxActive: { backgroundColor: '#14532d', borderColor: '#22c55e' },
+  vegDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#64748b', marginRight: 6 },
+  vegDotActive: { backgroundColor: '#4ade80' },
+  vegText: { fontSize: 12, fontWeight: '900', color: '#64748b' },
+  vegTextActive: { color: '#4ade80' },
+  
+  tabsScroll: { paddingHorizontal: 20, marginTop: 10, paddingBottom: 5 },
+  tabBtn: { paddingVertical: 10, paddingHorizontal: 14, marginRight: 8, position: 'relative' },
+  tabText: { color: '#64748b', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
+  tabTextActive: { color: '#fff', fontWeight: '900' },
+  tabActiveLine: { position: 'absolute', bottom: 0, left: 14, right: 14, height: 4, backgroundColor: '#f59e0b', borderRadius: 2 },
 
-  stickySearchSection: { backgroundColor: '#0a1024', borderBottomLeftRadius: 15, borderBottomRightRadius: 15, zIndex: 100, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.1, elevation: 4 },
-  searchRow: { flexDirection: 'row', paddingHorizontal: 15, paddingVertical: 10, alignItems: 'center' },
-  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, height: 48, paddingHorizontal: 12 },
-  searchIcon: { fontSize: 18, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 15, color: '#111827' },
-  searchDivider: { width: 1, height: 20, backgroundColor: '#e5e7eb', marginHorizontal: 10 },
-  micIcon: { fontSize: 18, color: '#fc8019' },
-  vegToggleBox: { backgroundColor: '#fff', borderRadius: 12, height: 48, marginLeft: 10, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center' },
-  vegText: { fontSize: 11, fontWeight: 'bold', color: '#22c55e', marginRight: 2 },
+  // HERO SECTION
+  heroBlueBanner: { backgroundColor: '#0f172a', paddingTop: 35, paddingBottom: 25, overflow: 'hidden', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, shadowColor: '#000', shadowOffset: {width: 0, height: 10}, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  floatingBurger: { position: 'absolute', top: 20, left: -20, width: 100, height: 100, transform: [{rotate: '-20deg'}], opacity: 0.9 },
+  floatingPizza: { position: 'absolute', top: 10, right: -20, width: 110, height: 110, transform: [{rotate: '15deg'}], opacity: 0.9 },
+  heroTextCenter: { alignItems: 'center', zIndex: 5 },
+  heroText70: { color: '#fff', fontSize: 50, fontWeight: '900', letterSpacing: -2, textShadowColor: '#f59e0b', textShadowOffset: {width: 2, height: 4}, textShadowRadius: 10 },
+  heroTextUpTo: { color: '#fcd34d', fontSize: 16, fontWeight: '900', letterSpacing: 3, marginTop: 5 },
   
-  tabsScroll: { paddingHorizontal: 15, marginTop: 5 },
-  tabBtn: { paddingVertical: 12, paddingHorizontal: 12, marginRight: 5, position: 'relative' },
-  tabBtnActive: {},
-  tabText: { color: '#9ca3af', fontSize: 12, fontWeight: 'bold', letterSpacing: 0.5 },
-  tabTextActive: { color: '#fff' },
-  tabActiveLine: { position: 'absolute', bottom: 0, left: 12, right: 12, height: 3, backgroundColor: '#fff', borderTopLeftRadius: 3, borderTopRightRadius: 3 },
-
-  heroBlueBanner: { backgroundColor: '#111e4f', paddingTop: 25, paddingBottom: 20, overflow: 'hidden' },
-  floatingBurger: { position: 'absolute', top: 20, left: -10, width: 80, height: 80, transform: [{rotate: '-15deg'}] },
-  floatingPizza: { position: 'absolute', top: 15, right: -10, width: 80, height: 80, transform: [{rotate: '15deg'}] },
-  heroTextCenter: { alignItems: 'center' },
-  heroText70: { color: '#fff', fontSize: 38, fontWeight: '900', letterSpacing: -1, textShadowColor: '#fc8019', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 1 },
-  heroTextUpTo: { color: '#fbbf24', fontSize: 16, fontWeight: '900', letterSpacing: 2 },
-  
-  yellowCard: { backgroundColor: '#ffdd00', width: 130, height: 170, borderRadius: 16, marginRight: 15, padding: 12, overflow: 'hidden', position: 'relative' },
-  yellowTitle: { fontSize: 15, fontWeight: '900', color: '#1c1c1c', textAlign: 'center', lineHeight: 20 },
+  yellowCard: { backgroundColor: '#f59e0b', width: 140, height: 180, borderRadius: 24, marginRight: 16, padding: 15, overflow: 'hidden', shadowColor: '#f59e0b', shadowOffset: {width:0, height:8}, shadowOpacity:0.4, shadowRadius:15, elevation:8 },
+  yellowTitle: { fontSize: 16, fontWeight: '900', color: '#fff', textAlign: 'center', lineHeight: 22, textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: {width:0, height:2}, textShadowRadius: 4 },
   yellowBadgeWrapper: { position: 'absolute', bottom: 20, left: 15, zIndex: 10 },
-  yellowBadge: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#1c248b', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
-  yellowBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', textAlign: 'center' },
-  yellowImg: { position: 'absolute', bottom: -10, right: -10, width: 90, height: 90, resizeMode: 'cover' },
+  yellowBadge: { width: 54, height: 54, borderRadius: 27, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff', shadowColor: '#000', shadowOffset: {width:0, height:4}, shadowOpacity:0.3, shadowRadius:5 },
+  yellowBadgeText: { color: '#fff', fontSize: 11, fontWeight: '900', textAlign: 'center', lineHeight: 14 },
+  yellowImg: { position: 'absolute', bottom: -15, right: -15, width: 100, height: 100, resizeMode: 'cover' },
 
-  sectionContainer: { paddingHorizontal: 15, marginTop: 25 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: '#1c1c1c', marginBottom: 15 },
+  // CATEGORIES
+  sectionContainer: { paddingHorizontal: 20, marginTop: 35 },
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  sectionTitle: { fontSize: 20, fontWeight: '900', color: '#0f172a', letterSpacing: -0.5 },
   
-  topRatedCard: { width: 140, marginRight: 15 },
-  topRatedImgContainer: { width: '100%', height: 140, borderRadius: 16, overflow: 'hidden', position: 'relative', marginBottom: 8 },
-  topRatedImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  topRatedOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, paddingTop: 20, backgroundColor: 'rgba(0,0,0,0.6)' },
-  topRatedOffer: { color: '#fff', fontSize: 14, fontWeight: '900' },
-  topRatedSubOffer: { color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: 'bold' },
-  heartIcon: { position: 'absolute', top: 8, right: 8 },
-  topRatedName: { fontSize: 15, fontWeight: '800', color: '#1c1c1c', marginBottom: 2 },
-  topRatedMeta: { fontSize: 12, color: '#24963f', fontWeight: '700', marginBottom: 2 },
-  topRatedDesc: { fontSize: 12, color: '#686b78' },
-  
-  mindScroll: { paddingBottom: 10 },
-  mindItem: { width: 80, alignItems: 'center', marginRight: 15 },
-  mindImg: { width: 70, height: 70, borderRadius: 35, marginBottom: 8 },
-  mindText: { fontSize: 13, fontWeight: '700', color: '#4b5563', textAlign: 'center' },
+  mindScroll: { paddingBottom: 15, overflow: 'visible' },
+  mindItem: { alignItems: 'center', marginRight: 22 },
+  mindImgContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fff', padding: 5, shadowColor: '#000', shadowOffset: {width:0, height:6}, shadowOpacity:0.08, shadowRadius:10, elevation:5, marginBottom: 10, borderWidth: 2, borderColor: 'transparent' },
+  mindImgContainerActive: { borderColor: '#f59e0b' },
+  mindImg: { width: '100%', height: '100%', borderRadius: 35 },
+  mindText: { fontSize: 14, fontWeight: '700', color: '#475569' },
+  mindTextActive: { color: '#f59e0b', fontWeight: '900' },
 
-  filterPillsSection: { paddingHorizontal: 15, marginTop: 15, marginBottom: 10 },
-  pillBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', marginRight: 10, backgroundColor: '#fff' },
-  pillText: { fontSize: 12, fontWeight: '700', color: '#4b5563' },
+  // FILTER PILLS
+  filterPillsSection: { paddingHorizontal: 20, marginTop: 15, marginBottom: 20 },
+  pillBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#cbd5e1', marginRight: 12, backgroundColor: '#fff', shadowColor: '#000', shadowOffset: {width:0, height:2}, shadowOpacity:0.05, shadowRadius:4, elevation:2 },
+  pillBtnActive: { backgroundColor: '#0f172a', borderColor: '#0f172a' },
+  pillText: { fontSize: 13, fontWeight: '800', color: '#475569' },
+  pillTextActive: { color: '#fff' },
 
-  mainRestCard: { marginBottom: 30 },
-  mainRestImgContainer: { width: '100%', height: 220, borderRadius: 20, overflow: 'hidden', position: 'relative', marginBottom: 12 },
+  // MAIN RESTAURANT CARDS (Ultra Premium)
+  mainRestCard: { backgroundColor: '#fff', borderRadius: 28, marginBottom: 35, shadowColor: '#000', shadowOffset: {width: 0, height: 15}, shadowOpacity: 0.1, shadowRadius: 30, elevation: 12 },
+  mainRestImgContainer: { width: '100%', height: 240, borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: 'hidden', position: 'relative' },
   mainRestImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  mainHeartIcon: { position: 'absolute', top: 15, right: 15 },
-  imageDots: { position: 'absolute', top: 15, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center' },
-  imgDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,255,255,0.5)', marginHorizontal: 2 },
-  mainRestOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 15, paddingTop: 40, backgroundColor: 'rgba(0,0,0,0.7)' },
-  mainRestOffer: { color: '#fff', fontSize: 20, fontWeight: '900' },
-  mainRestTimeBadge: { position: 'absolute', bottom: 15, right: 15, backgroundColor: '#fff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  mainRestTimeText: { color: '#1c1c1c', fontSize: 12, fontWeight: '900' },
-  mainRestInfo: { paddingHorizontal: 5 },
-  mainRestName: { fontSize: 20, fontWeight: '900', color: '#1c1c1c', marginBottom: 4 },
-  mainRestRating: { fontSize: 14, color: '#4b5563', fontWeight: '600', marginBottom: 4 },
-  mainRestCuisine: { fontSize: 14, color: '#686b78' }
+  imageOverlayGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, backgroundColor: 'rgba(0,0,0,0.5)' },
+  mainHeartIcon: { position: 'absolute', top: 20, right: 20 },
+  mainRestOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingTop: 40 },
+  mainRestOffer: { color: '#fff', fontSize: 24, fontWeight: '900', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: {width:0, height:2}, textShadowRadius:4 },
+  mainRestTimeBadge: { position: 'absolute', bottom: 20, right: 20, backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, shadowColor: '#000', shadowOffset: {width:0, height:4}, shadowOpacity:0.2, shadowRadius:5 },
+  mainRestTimeText: { color: '#0f172a', fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
+  
+  mainRestInfo: { padding: 20 },
+  mainRestName: { fontSize: 22, fontWeight: '900', color: '#0f172a', marginBottom: 6, letterSpacing: -0.5 },
+  mainRestRating: { fontSize: 15, color: '#475569', fontWeight: '700', marginBottom: 6 },
+  mainRestCuisine: { fontSize: 15, color: '#64748b', fontWeight: '500' },
+
+  // EMPTY STATE
+  emptyState: { alignItems: 'center', marginTop: 40, padding: 20 },
+  emptyTitle: { fontSize: 22, fontWeight: '900', color: '#0f172a', marginBottom: 10 },
+  emptySub: { fontSize: 15, color: '#64748b', textAlign: 'center' }
 });
