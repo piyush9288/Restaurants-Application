@@ -24,6 +24,23 @@ def on_startup():
             print("Added pincode columns")
     except Exception as e:
         print("Column might already exist or error:", e)
+        
+    try:
+        from app.db.session import SessionLocal
+        from app.models.user import User, UserRole
+        from app.core.security import get_password_hash
+        
+        db = SessionLocal()
+        admin_user = db.query(User).filter(User.email == "admin").first()
+        if not admin_user:
+            hashed_pw = get_password_hash("admin12")
+            new_admin = User(email="admin", hashed_password=hashed_pw, role=UserRole.ADMIN, is_active=True)
+            db.add(new_admin)
+            db.commit()
+            print("Successfully created default admin user: admin / admin12")
+        db.close()
+    except Exception as e:
+        print("Failed to seed admin user:", e)
 
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
