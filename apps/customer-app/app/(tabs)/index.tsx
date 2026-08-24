@@ -157,17 +157,33 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.locationContainer}>
-          <Text style={styles.locationLabel}>Delivering to</Text>
-          <Text style={styles.locationValue} numberOfLines={1}>
-             {userProfile?.pincode ? `${userProfile.address.split(',')[0]} • ${userProfile.pincode} 🔽` : 'Home • New Delhi, India 🔽'}
-          </Text>
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <Text style={styles.locationPin}>📍</Text>
+              <Text style={styles.locationLabel}>Delivery to</Text>
+          </View>
+          <View style={styles.addressRow}>
+              <Text style={styles.locationValue} numberOfLines={1}>
+                {userProfile?.pincode ? `${userProfile.address.split(',')[0]}, ${userProfile.pincode}` : 'Home, New Delhi, India'}
+              </Text>
+              <Text style={styles.chevron}>⌄</Text>
+          </View>
         </View>
+        
         <View style={styles.headerRight}>
-          <Link href="/help"><Text style={styles.iconButton}>🎧</Text></Link>
-          <Link href="/cart"><Text style={styles.iconButton}>🛒</Text></Link>
+          <Link href="/help" asChild>
+              <TouchableOpacity style={styles.iconCircle}>
+                  <Text style={styles.iconText}>🎧</Text>
+              </TouchableOpacity>
+          </Link>
+          <Link href="/cart" asChild>
+              <TouchableOpacity style={styles.iconCircle}>
+                  <Text style={styles.iconText}>🛒</Text>
+              </TouchableOpacity>
+          </Link>
           {isAuthenticated ? (
-            <TouchableOpacity onPress={() => router.push('/profile')}>
+            <TouchableOpacity onPress={() => router.push('/profile')} style={styles.avatarWrapper}>
                <Image source={{uri: 'https://i.pravatar.cc/100?img=33'}} style={styles.avatar} />
+               <View style={styles.onlineDot} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginBtn}>
@@ -241,15 +257,23 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, paddingTop: Platform.OS === 'android' ? 40 : 15, paddingBottom: 15 },
-  locationContainer: { flex: 1 },
-  locationLabel: { fontSize: 13, color: '#fc8019', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 },
-  locationValue: { fontSize: 16, fontWeight: '700', color: '#1c1c1c', marginTop: 2 },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 15 },
-  iconButton: { fontSize: 22 },
-  avatar: { width: 35, height: 35, borderRadius: 17.5, borderWidth: 2, borderColor: '#eee' },
-  loginBtn: { backgroundColor: '#fc8019', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20 },
-  loginBtnText: { color: '#fff', fontWeight: 'bold' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 45 : 15, paddingBottom: 15, backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 3, zIndex: 10 },
+  locationContainer: { flex: 1, paddingRight: 15 },
+  locationPin: { fontSize: 16, marginRight: 4 },
+  locationLabel: { fontSize: 13, color: '#fc8019', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  locationValue: { fontSize: 17, fontWeight: '800', color: '#111827', flexShrink: 1 },
+  chevron: { fontSize: 20, color: '#6b7280', marginLeft: 4, marginTop: -6, fontWeight: '300' },
+  
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f3f4f6', justifyContent: 'center', alignItems: 'center' },
+  iconText: { fontSize: 18 },
+  avatarWrapper: { position: 'relative' },
+  avatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#fff' },
+  onlineDot: { position: 'absolute', bottom: 2, right: 2, width: 10, height: 10, borderRadius: 5, backgroundColor: '#10b981', borderWidth: 2, borderColor: '#fff' },
+  
+  loginBtn: { backgroundColor: '#111827', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.15, shadowRadius: 5, elevation: 4 },
+  loginBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f0f0f5', marginHorizontal: 15, paddingHorizontal: 15, borderRadius: 12, height: 50, marginBottom: 20 },
   searchIcon: { fontSize: 18, marginRight: 10 },
