@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Image, TextInput, SafeAreaView, Platform, Animated, Easing, Dimensions } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Image, TextInput, SafeAreaView, Platform, Animated, Dimensions, Switch } from 'react-native';
+import { useRouter, useFocusEffect } from 'react-native';
+// Note: router is imported from expo-router, using require/import based on framework
+import { router } from 'expo-router';
 import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
@@ -9,123 +11,49 @@ const { width } = Dimensions.get('window');
 const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
 
 const CATEGORIES = [
-  { id: '1', name: 'Offers', img: 'https://cdn-icons-png.flaticon.com/512/879/879859.png' },
-  { id: '2', name: 'Pizza', img: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png' },
-  { id: '3', name: 'Burger', img: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png' },
-  { id: '4', name: 'Healthy', img: 'https://cdn-icons-png.flaticon.com/512/2318/2318055.png' },
-  { id: '5', name: 'Desserts', img: 'https://cdn-icons-png.flaticon.com/512/3081/3081832.png' },
-  { id: '6', name: 'Chicken', img: 'https://cdn-icons-png.flaticon.com/512/1046/1046786.png' },
+  { id: '1', name: 'Specials', img: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=200&q=80' },
+  { id: '2', name: 'Pizzas', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=200&q=80' },
+  { id: '3', name: 'Burgers', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&q=80' },
+  { id: '4', name: 'Biryani', img: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=200&q=80' },
+  { id: '5', name: 'Cakes', img: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=200&q=80' },
 ];
 
-const BANNERS = [
-  { id: 'b1', title: 'PIZZA PARTY', discount: '70% OFF', sub: 'UP TO ₹140 OFF', desc: 'Craving something cheesy?', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80', color: '#ff4b4b' },
-  { id: 'b2', title: 'BURGER BONANZA', discount: '60% OFF', sub: 'UP TO ₹120 OFF', desc: 'Juicy burgers wait for you.', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80', color: '#fc8019' },
-  { id: 'b3', title: 'HEALTHY BITES', discount: 'FLAT 50%', sub: 'NO MINIMUM', desc: 'Eat fresh, feel fresh.', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&q=80', color: '#10b981' }
+const YELLOW_OFFERS = [
+  { id: '1', title: 'Delightful\nDeals', badge: 'GET\n70%\nOFF', img: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=300&q=80' },
+  { id: '2', title: 'Flat ₹200 OFF\n& More', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&q=80' },
+  { id: '3', title: 'Pick Your\nOffer!', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&q=80' },
 ];
+
+const TOP_RATED = [
+  { id: '1', name: 'Biryani Mahal', rating: '4.3', time: '40-45 mins', offer: '₹50 OFF', img: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=400&q=80' },
+  { id: '2', name: 'Bikkgane Biryani', rating: '4.3', time: '30-35 mins', offer: '50% OFF', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=400&q=80' },
+  { id: '3', name: 'Baskin Robbins', rating: '4.5', time: '25-30 mins', offer: 'BUY 1 GET 1', img: 'https://images.unsplash.com/photo-1558500588-44fbfa716eb7?w=400&q=80' },
+];
+
+const FILTER_PILLS = ['Filter', 'Sort by v', 'Extra off', '99 Store', 'Fast Delivery'];
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState([]);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isVeg, setIsVeg] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const router = useRouter();
-
-  // Animations
-  const scrollY = useRef(new Animated.Value(0)).current;
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const searchWidth = useRef(new Animated.Value(width - 40)).current;
-
-  // Search Placeholder Animation
-  const placeholders = ["Search for pizza...", "Search for burgers...", "Search for biryani...", "Search for desserts..."];
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
-
-  // Auto-slide banner logic
-  const flatListRef = useRef<FlatList>(null);
-  const currentSlide = useRef(0);
+  
+  const [activeTab, setActiveTab] = useState('ALL');
+  const TABS = ['ALL', 'STORE', 'OFFERS', 'FOOD ON TRAIN', 'EATRIGHT'];
 
   useEffect(() => {
-    const slideInterval = setInterval(() => {
-      if (flatListRef.current) {
-        currentSlide.current = (currentSlide.current + 1) % BANNERS.length;
-        flatListRef.current.scrollToOffset({
-          offset: currentSlide.current * (width - 20),
-          animated: true,
-        });
-      }
-    }, 3000); // 3 seconds per slide
+    // Fetch user profile logic
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) {
+      fetch(API_URL + '/api/users/me/profile', { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.pincode) setUserProfile(data);
+        }).catch(e => {});
+    }
 
-    return () => clearInterval(slideInterval);
-  }, []);
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
-      Animated.spring(slideAnim, { toValue: 0, tension: 50, friction: 7, useNativeDriver: true })
-    ]).start();
-
-    const interval = setInterval(() => {
-        setPlaceholderIdx(prev => (prev + 1) % placeholders.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      setIsAuthenticated(!!token);
-      
-      const fetchProfileAndLocation = async () => {
-        let loadedProfile = null;
-        if (token) {
-          try {
-            const res = await fetch(API_URL + '/api/users/me/profile', {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data && data.pincode) {
-              loadedProfile = data;
-              setUserProfile(data);
-            }
-          } catch (e) {}
-        }
-        
-        if (Platform.OS !== 'web') {
-            try {
-                const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status === 'granted') {
-                    const location = await Location.getCurrentPositionAsync({});
-                    const reverseGeocode = await Location.reverseGeocodeAsync({
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude
-                    });
-                    
-                    if (reverseGeocode && reverseGeocode.length > 0) {
-                        const loc = reverseGeocode[0];
-                        const livePincode = loc.postalCode || loadedProfile?.pincode;
-                        const liveAddress = `${loc.name ? loc.name + ', ' : ''}${loc.city ? loc.city : ''}`;
-                        
-                        setUserProfile((prev: any) => ({
-                            ...(prev || {}),
-                            pincode: livePincode,
-                            address: liveAddress || prev?.address
-                        }));
-                    }
-                }
-            } catch (e) {
-                console.log("GPS fetch failed silently");
-            }
-        }
-      };
-
-      fetchProfileAndLocation();
-    }, [])
-  );
-
-  useEffect(() => {
+    // Fetch restaurants
     fetch(API_URL + '/api/restaurants/')
       .then((res) => res.json())
       .then((data) => {
@@ -135,306 +63,301 @@ export default function HomeScreen() {
       .catch(() => setLoading(false));
   }, []);
 
-  const filteredRestaurants = restaurants.filter((r: any) => {
-    const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase());
-    let matchesCategory = true;
-    if (activeCategory && activeCategory !== 'Offers') {
-      matchesCategory = r.description.toLowerCase().includes(activeCategory.toLowerCase()) || r.name.toLowerCase().includes(activeCategory.toLowerCase());
-    }
-    let matchesPincode = true;
-    if (userProfile?.pincode && r.pincode) {
-        matchesPincode = userProfile.pincode === r.pincode;
-    }
-    return matchesSearch && matchesCategory && matchesPincode;
-  });
-
-  const handleSearchFocus = () => {
-      Animated.spring(searchWidth, { toValue: width - 20, useNativeDriver: false, tension: 100, friction: 10 }).start();
-  };
-  const handleSearchBlur = () => {
-      Animated.spring(searchWidth, { toValue: width - 40, useNativeDriver: false, tension: 100, friction: 10 }).start();
-  };
-
-  const renderBanner = ({ item }: { item: any }) => (
-      <View style={[styles.bannerCard, { backgroundColor: item.color }]}>
-          <Image source={{ uri: item.img }} style={styles.bannerImg} />
-          <View style={styles.bannerOverlay}>
-              <Text style={styles.bannerTitle}>{item.title}</Text>
-              <Text style={styles.bannerDiscount}>{item.discount}</Text>
-              <Text style={styles.bannerSub}>{item.sub}</Text>
-              <Text style={styles.bannerDesc}>{item.desc}</Text>
-              <TouchableOpacity style={styles.bannerBtn}>
-                  <Text style={styles.bannerBtnText}>ORDER NOW</Text>
-              </TouchableOpacity>
+  const renderTopRated = ({ item }: { item: any }) => (
+      <TouchableOpacity style={styles.topRatedCard} activeOpacity={0.9} onPress={() => router.push(`/restaurant/1?name=${encodeURIComponent(item.name)}`)}>
+          <View style={styles.topRatedImgContainer}>
+              <Image source={{ uri: item.img }} style={styles.topRatedImg} />
+              <TouchableOpacity style={styles.heartIcon}><Text style={{color: '#fff', fontSize: 18}}>🤍</Text></TouchableOpacity>
+              <View style={styles.topRatedOverlay}>
+                  <Text style={styles.topRatedOffer}>{item.offer}</Text>
+                  {item.offer.includes('ABOVE') && <Text style={styles.topRatedSubOffer}>ABOVE ₹449</Text>}
+              </View>
           </View>
-      </View>
+          <Text style={styles.topRatedName} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.topRatedMeta}>⭐ {item.rating} • {item.time}</Text>
+          <Text style={styles.topRatedDesc}>Biryani</Text>
+      </TouchableOpacity>
+  );
+
+  const renderYellowOffer = ({ item }: { item: any }) => (
+      <TouchableOpacity style={styles.yellowCard} activeOpacity={0.9}>
+          <Text style={styles.yellowTitle}>{item.title}</Text>
+          {item.badge && (
+             <View style={styles.yellowBadgeWrapper}>
+                 <View style={styles.yellowBadge}>
+                    <Text style={styles.yellowBadgeText}>{item.badge}</Text>
+                 </View>
+             </View>
+          )}
+          <Image source={{ uri: item.img }} style={styles.yellowImg} />
+      </TouchableOpacity>
   );
 
   const renderRestaurant = ({ item, index }: { item: any, index: number }) => {
     const images = [
-      'https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80',
-      'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80',
-      'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80'
+      'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&q=80',
+      'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80',
+      'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80'
     ];
     const imgUrl = images[index % images.length];
-    const rating = (4 + (index % 10) * 0.1).toFixed(1);
-    const time = 25 + (index % 3) * 10;
     
-    // Staggered entrance
-    const inputRange = [-1, 0, (index * 120) + 150];
-    const opacity = scrollY.interpolate({ inputRange, outputRange: [1, 1, 1], extrapolate: 'clamp' }); 
-    // Usually we would use scrollY to fade items in as they enter view, but for simplicity we'll just render them.
-
     return (
-      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <TouchableOpacity 
-            style={styles.restaurantCard}
-            activeOpacity={0.9}
-            onPress={() => router.push(`/restaurant/${item.id}?name=${encodeURIComponent(item.name)}`)}
-          >
-            <Image source={{ uri: imgUrl }} style={styles.cardImage} />
-            <View style={styles.cardOverlay}>
-              <Text style={styles.offerText}>50% OFF</Text>
-              <Text style={styles.offerSubtext}>Up to ₹120</Text>
+      <TouchableOpacity 
+        style={styles.mainRestCard}
+        activeOpacity={0.9}
+        onPress={() => router.push(`/restaurant/${item.id}?name=${encodeURIComponent(item.name)}`)}
+      >
+        <View style={styles.mainRestImgContainer}>
+            <Image source={{ uri: imgUrl }} style={styles.mainRestImg} />
+            <TouchableOpacity style={styles.mainHeartIcon}><Text style={{color: '#fff', fontSize: 22}}>🤍</Text></TouchableOpacity>
+            
+            {/* Dots */}
+            <View style={styles.imageDots}>
+                <View style={[styles.imgDot, {backgroundColor: '#fff', width: 8}]} />
+                <View style={styles.imgDot} /><View style={styles.imgDot} /><View style={styles.imgDot} />
             </View>
-            <View style={styles.cardInfo}>
-              <View style={styles.cardHeaderRow}>
-                <Text style={styles.restaurantName} numberOfLines={1}>{item.name}</Text>
-                <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>{rating} ⭐</Text>
-                </View>
-              </View>
-              <Text style={styles.cuisineText}>{item.description} • ₹200 for one</Text>
-              <View style={styles.metaRow}>
-                <View style={styles.metaBadge}><Text style={styles.metaText}>⏱ {time} min</Text></View>
-                <View style={styles.metaBadge}><Text style={styles.metaText}>📍 {item.address}</Text></View>
-              </View>
+
+            <View style={styles.mainRestOverlay}>
+                <Text style={styles.mainRestOffer}>🔥 Buy 1 get 1</Text>
             </View>
-          </TouchableOpacity>
-      </Animated.View>
+            <View style={styles.mainRestTimeBadge}>
+                <Text style={styles.mainRestTimeText}>35-40 MINS</Text>
+            </View>
+        </View>
+
+        <View style={styles.mainRestInfo}>
+            <Text style={styles.mainRestName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.mainRestRating}>⭐ 4.2 (1.1K+) • {item.address}</Text>
+            <Text style={styles.mainRestCuisine}>{item.description} • ₹300 for two</Text>
+        </View>
+      </TouchableOpacity>
     );
   };
 
-  const SkeletonLoader = () => (
-      <View style={{marginHorizontal: 15, marginTop: 10}}>
-          <View style={{width: '100%', height: 180, backgroundColor: '#e5e7eb', borderRadius: 16, marginBottom: 15}} />
-          <View style={{width: '60%', height: 20, backgroundColor: '#e5e7eb', borderRadius: 4, marginBottom: 10}} />
-          <View style={{width: '40%', height: 15, backgroundColor: '#e5e7eb', borderRadius: 4}} />
-      </View>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Animated Header */}
-      <View style={styles.header}>
-        <View style={styles.locationContainer}>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              <Text style={styles.locationPin}>📍</Text>
-              <Text style={styles.locationLabel}>Delivery to</Text>
-          </View>
-          <View style={styles.addressRow}>
-              <Text style={styles.locationValue} numberOfLines={1}>
-                {userProfile?.pincode ? `${userProfile.address.split(',')[0]}, ${userProfile.pincode}` : 'Fetching location...'}
-              </Text>
-          </View>
-        </View>
+      <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[1]} contentContainerStyle={{paddingBottom: 100}}>
         
-        <View style={styles.headerRight}>
-          {isAuthenticated ? (
-            <TouchableOpacity onPress={() => router.push('/profile')} style={styles.avatarWrapper}>
-               <Image source={{uri: 'https://i.pravatar.cc/100?img=33'}} style={styles.avatar} />
-               <View style={styles.onlineDot} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={() => router.push('/login')} style={styles.loginBtn}>
-              <Text style={styles.loginBtnText}>Login</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+        {/* TOP BLUE SECTION */}
+        <View style={styles.blueHeaderSection}>
+            {/* Location */}
+            <View style={styles.locationHeader}>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Text style={styles.locationTitle}>Near maa ambey utsav hall &gt;</Text>
+                </View>
+                <Text style={styles.locationSub} numberOfLines={1}>Amrendra Kumar, Pragati Nagar, Sipara, Patna, Bihar...</Text>
+            </View>
 
-      <Animated.ScrollView 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{paddingBottom: 120}}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
-        scrollEventThrottle={16}
-      >
-        
-        {/* Premium Search Bar */}
-        <View style={{alignItems: 'center'}}>
-            <Animated.View style={[styles.searchContainer, { width: searchWidth }]}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput 
-                style={styles.searchInput} 
-                placeholder={placeholders[placeholderIdx]} 
-                placeholderTextColor="#9ca3af"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                onFocus={handleSearchFocus}
-                onBlur={handleSearchBlur}
-            />
-            <View style={styles.searchDivider} />
-            <TouchableOpacity><Text style={styles.micIcon}>🎤</Text></TouchableOpacity>
-            </Animated.View>
+            {/* Service Toggles */}
+            <View style={styles.serviceToggles}>
+                <TouchableOpacity style={[styles.serviceBtn, styles.serviceBtnActive]}>
+                    <Text style={{fontSize: 24, marginBottom: 4}}>🍔</Text>
+                    <Text style={styles.serviceTextActive}>Food</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.serviceBtn}>
+                    <View style={styles.timeBadge}><Text style={styles.timeBadgeText}>22 mins</Text></View>
+                    <Text style={{fontSize: 24, marginBottom: 4}}>🛒</Text>
+                    <Text style={styles.serviceText}>Instamart</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.serviceBtn}>
+                    <Text style={{fontSize: 24, marginBottom: 4}}>🍽️</Text>
+                    <Text style={styles.serviceText}>Dineout</Text>
+                </TouchableOpacity>
+            </View>
         </View>
 
-        {/* Hero Banners */}
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            <Animated.FlatList 
-                ref={flatListRef}
-                data={BANNERS}
+        {/* SEARCH & FILTERS (Sticky) */}
+        <View style={styles.stickySearchSection}>
+            <View style={styles.searchRow}>
+                <View style={styles.searchBox}>
+                    <Text style={styles.searchIcon}>🔍</Text>
+                    <TextInput 
+                        style={styles.searchInput}
+                        placeholder="Search for 'Biryani'"
+                        placeholderTextColor="#888"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                    />
+                    <View style={styles.searchDivider} />
+                    <Text style={styles.micIcon}>🎤</Text>
+                </View>
+                
+                <View style={styles.vegToggleBox}>
+                    <Text style={styles.vegText}>VEG</Text>
+                    <Switch value={isVeg} onValueChange={setIsVeg} trackColor={{false: '#ccc', true: '#22c55e'}} thumbColor="#fff" />
+                </View>
+            </View>
+
+            {/* TABS */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
+                {TABS.map((tab) => (
+                    <TouchableOpacity key={tab} style={[styles.tabBtn, activeTab === tab && styles.tabBtnActive]} onPress={() => setActiveTab(tab)}>
+                        <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+                        {activeTab === tab && <View style={styles.tabActiveLine} />}
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+
+        {/* 70% OFF BLUE HERO BANNER */}
+        <View style={styles.heroBlueBanner}>
+            <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={styles.floatingBurger} />
+            <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png'}} style={styles.floatingPizza} />
+            <View style={styles.heroTextCenter}>
+                <Text style={styles.heroText70}>70% OFF</Text>
+                <Text style={styles.heroTextUpTo}>UP TO ₹140</Text>
+            </View>
+
+            {/* Yellow Offers Horizontal List */}
+            <FlatList 
+                data={YELLOW_OFFERS}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                snapToInterval={width - 20}
-                decelerationRate="fast"
-                onScroll={Animated.event(
-                  [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                  { useNativeDriver: false }
-                )}
-                scrollEventThrottle={16}
-                onMomentumScrollEnd={(e) => {
-                  const contentOffset = e.nativeEvent.contentOffset.x;
-                  currentSlide.current = Math.round(contentOffset / (width - 20));
-                }}
-                contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 15 }}
-                renderItem={renderBanner}
-                keyExtractor={(item: any) => item.id}
+                contentContainerStyle={{paddingHorizontal: 15, paddingTop: 20}}
+                renderItem={renderYellowOffer}
+                keyExtractor={item => item.id}
             />
-            {/* Paging Dots */}
-            <View style={styles.dotContainer}>
-              {BANNERS.map((_, i) => {
-                const inputRange = [(i - 1) * (width - 20), i * (width - 20), (i + 1) * (width - 20)];
-                const dotWidth = scrollX.interpolate({
-                  inputRange,
-                  outputRange: [8, 24, 8],
-                  extrapolate: 'clamp'
-                });
-                const opacity = scrollX.interpolate({
-                  inputRange,
-                  outputRange: [0.3, 1, 0.3],
-                  extrapolate: 'clamp'
-                });
-                return <Animated.View key={i} style={[styles.dot, { width: dotWidth, opacity }]} />
-              })}
-            </View>
-        </Animated.View>
+        </View>
 
-        {/* Categories */}
+        {/* TOP RATED NEAR YOU */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>What's on your mind?</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-            {CATEGORIES.map((cat, idx) => {
-              const isActive = activeCategory === cat.name;
-              return (
-                <TouchableOpacity 
-                  key={cat.id} 
-                  style={[styles.categoryItem, { marginLeft: idx === 0 ? 0 : 20 }]}
-                  activeOpacity={0.7}
-                  onPress={() => setActiveCategory(isActive ? null : cat.name)}
-                >
-                  <View style={[styles.categoryIconCircle, isActive && { backgroundColor: '#fff3ed', borderColor: '#fc8019', borderWidth: 2 }]}>
-                    <Image source={{uri: cat.img}} style={{width: 45, height: 45, resizeMode: 'contain'}} />
-                  </View>
-                  <Text style={[styles.categoryName, isActive && { color: '#fc8019', fontWeight: 'bold' }]}>{cat.name}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Restaurant List */}
-        <View style={[styles.sectionContainer, {marginTop: 10}]}>
-          <Text style={styles.sectionTitle}>
-            {activeCategory ? `Top ${activeCategory} places` : 'Restaurants to explore'}
-          </Text>
-          
-          {loading ? (
-             <View>
-                 <SkeletonLoader />
-                 <SkeletonLoader />
-             </View>
-          ) : (
-            <FlatList
-              data={filteredRestaurants}
-              keyExtractor={(item: any) => item.id.toString()}
-              renderItem={renderRestaurant}
-              scrollEnabled={false}
-              ListEmptyComponent={
-                  <View style={styles.emptyState}>
-                      <Text style={{fontSize: 50, marginBottom: 15}}>🍽️</Text>
-                      <Text style={styles.emptyTitle}>Looks a little quiet here</Text>
-                      <Text style={styles.emptySub}>Try changing your location or search query.</Text>
-                  </View>
-              }
+            <Text style={styles.sectionTitle}>Top rated near you</Text>
+            <FlatList 
+                data={TOP_RATED}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{paddingRight: 15}}
+                renderItem={renderTopRated}
+                keyExtractor={item => item.id}
             />
-          )}
         </View>
 
-      </Animated.ScrollView>
+        {/* WHAT'S ON YOUR MIND? */}
+        <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>What's on your mind?</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mindScroll}>
+                {CATEGORIES.map(cat => (
+                    <TouchableOpacity key={cat.id} style={styles.mindItem}>
+                        <Image source={{uri: cat.img}} style={styles.mindImg} />
+                        <Text style={styles.mindText}>{cat.name}</Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+
+        {/* 99 STORE PROMO & FILTER PILLS */}
+        <View style={styles.filterPillsSection}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {FILTER_PILLS.map((pill, idx) => (
+                    <TouchableOpacity key={idx} style={styles.pillBtn}>
+                        <Text style={styles.pillText}>{pill}</Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
+        </View>
+
+        {/* ALL RESTAURANTS */}
+        <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Top {restaurants.length} restaurants to explore</Text>
+            {loading ? (
+                <ActivityIndicator size="large" color="#fc8019" style={{marginTop: 40}} />
+            ) : (
+                <FlatList 
+                    data={restaurants}
+                    keyExtractor={(item: any) => item.id.toString()}
+                    renderItem={renderRestaurant}
+                    scrollEnabled={false}
+                />
+            )}
+        </View>
+
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fcfcfc' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'android' ? 45 : 15, paddingBottom: 15, backgroundColor: '#fcfcfc' },
-  locationContainer: { flex: 1, paddingRight: 15 },
-  locationPin: { fontSize: 18, marginRight: 4 },
-  locationLabel: { fontSize: 13, color: '#fc8019', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
-  addressRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  locationValue: { fontSize: 18, fontWeight: '900', color: '#111827', flexShrink: 1, letterSpacing: -0.3 },
+  container: { flex: 1, backgroundColor: '#fff' },
   
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatarWrapper: { position: 'relative' },
-  avatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 2, borderColor: '#fff', shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.1, elevation: 3 },
-  onlineDot: { position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: '#10b981', borderWidth: 2, borderColor: '#fff' },
+  blueHeaderSection: { backgroundColor: '#0a1024', paddingTop: Platform.OS === 'android' ? 40 : 20, paddingHorizontal: 15, paddingBottom: 15 },
+  locationHeader: { marginBottom: 20 },
+  locationTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
+  locationSub: { color: '#9ca3af', fontSize: 13 },
   
-  loginBtn: { backgroundColor: '#111827', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.15, shadowRadius: 5, elevation: 4 },
-  loginBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
-  
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 18, borderRadius: 18, height: 58, marginTop: 10, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 20, elevation: 6, borderWidth: 1, borderColor: 'rgba(0,0,0,0.02)' },
-  searchIcon: { fontSize: 20, marginRight: 12, color: '#fc8019' },
-  searchInput: { flex: 1, fontSize: 15, fontWeight: '600', color: '#111827' },
-  searchDivider: { width: 1, height: 28, backgroundColor: '#e5e7eb', marginHorizontal: 15 },
-  micIcon: { fontSize: 20, color: '#fc8019' },
-  
-  bannerCard: { width: width - 40, height: 180, borderRadius: 24, marginHorizontal: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 15, elevation: 8 },
-  bannerImg: { width: '100%', height: '100%', position: 'absolute', opacity: 0.4, resizeMode: 'cover' },
-  bannerOverlay: { flex: 1, padding: 25, justifyContent: 'center' },
-  bannerTitle: { color: '#fff', fontSize: 22, fontWeight: '900', letterSpacing: 1, marginBottom: 5 },
-  bannerDiscount: { color: '#fff', fontSize: 32, fontWeight: '900', marginBottom: 2 },
-  bannerSub: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '800', marginBottom: 12, letterSpacing: 0.5 },
-  bannerDesc: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '600', marginBottom: 15 },
-  bannerBtn: { backgroundColor: '#fff', alignSelf: 'flex-start', paddingHorizontal: 22, paddingVertical: 12, borderRadius: 30, shadowColor: '#fff', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  bannerBtnText: { color: '#111827', fontWeight: '900', fontSize: 13, letterSpacing: 0.8 },
-  
-  dotContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 25, marginTop: 5 },
-  dot: { height: 8, borderRadius: 4, backgroundColor: '#fc8019', marginHorizontal: 4 },
+  serviceToggles: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#111827', borderRadius: 20, padding: 5 },
+  serviceBtn: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 16, position: 'relative' },
+  serviceBtnActive: { backgroundColor: '#1d2745' },
+  serviceText: { color: '#9ca3af', fontSize: 12, fontWeight: '700' },
+  serviceTextActive: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  timeBadge: { position: 'absolute', top: -5, backgroundColor: '#2563eb', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, zIndex: 10 },
+  timeBadgeText: { color: '#fff', fontSize: 9, fontWeight: 'bold' },
 
-  sectionContainer: { marginHorizontal: 20, marginBottom: 25 },
-  sectionTitle: { fontSize: 22, fontWeight: '900', color: '#111827', marginBottom: 20, letterSpacing: -0.5 },
+  stickySearchSection: { backgroundColor: '#0a1024', borderBottomLeftRadius: 15, borderBottomRightRadius: 15, zIndex: 100, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.1, elevation: 4 },
+  searchRow: { flexDirection: 'row', paddingHorizontal: 15, paddingVertical: 10, alignItems: 'center' },
+  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, height: 48, paddingHorizontal: 12 },
+  searchIcon: { fontSize: 18, marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 15, color: '#111827' },
+  searchDivider: { width: 1, height: 20, backgroundColor: '#e5e7eb', marginHorizontal: 10 },
+  micIcon: { fontSize: 18, color: '#fc8019' },
+  vegToggleBox: { backgroundColor: '#fff', borderRadius: 12, height: 48, marginLeft: 10, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center' },
+  vegText: { fontSize: 11, fontWeight: 'bold', color: '#22c55e', marginRight: 2 },
   
-  categoriesScroll: { flexDirection: 'row', overflow: 'visible' },
-  categoryItem: { alignItems: 'center' },
-  categoryIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 4 },
-  categoryName: { fontSize: 14, fontWeight: '700', color: '#4b5563' },
-  
-  restaurantCard: { backgroundColor: '#fff', borderRadius: 24, marginBottom: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 20, elevation: 6, overflow: 'hidden' },
-  cardImage: { width: '100%', height: 200, resizeMode: 'cover' },
-  cardOverlay: { position: 'absolute', top: 145, left: 0, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: 'rgba(0,0,0,0.75)', borderTopRightRadius: 12, borderBottomRightRadius: 12 },
-  offerText: { color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 },
-  offerSubtext: { color: '#fff', fontSize: 11, fontWeight: '700', opacity: 0.9 },
-  cardInfo: { padding: 18 },
-  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  restaurantName: { fontSize: 20, fontWeight: '900', color: '#111827', flex: 1, marginRight: 15, letterSpacing: -0.3 },
-  ratingBadge: { backgroundColor: '#24963f', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8 },
-  ratingText: { color: '#fff', fontSize: 13, fontWeight: '900' },
-  cuisineText: { color: '#6b7280', fontSize: 14, marginBottom: 12, fontWeight: '500' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  metaBadge: { backgroundColor: '#f3f4f6', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
-  metaText: { color: '#4b5563', fontSize: 13, fontWeight: '700' },
+  tabsScroll: { paddingHorizontal: 15, marginTop: 5 },
+  tabBtn: { paddingVertical: 12, paddingHorizontal: 12, marginRight: 5, position: 'relative' },
+  tabBtnActive: {},
+  tabText: { color: '#9ca3af', fontSize: 12, fontWeight: 'bold', letterSpacing: 0.5 },
+  tabTextActive: { color: '#fff' },
+  tabActiveLine: { position: 'absolute', bottom: 0, left: 12, right: 12, height: 3, backgroundColor: '#fff', borderTopLeftRadius: 3, borderTopRightRadius: 3 },
 
-  emptyState: { alignItems: 'center', marginTop: 30, padding: 20 },
-  emptyTitle: { fontSize: 18, fontWeight: '900', color: '#111827', marginBottom: 10 },
-  emptySub: { fontSize: 14, color: '#6b7280', textAlign: 'center' }
+  heroBlueBanner: { backgroundColor: '#111e4f', paddingTop: 25, paddingBottom: 20, overflow: 'hidden' },
+  floatingBurger: { position: 'absolute', top: 20, left: -10, width: 80, height: 80, transform: [{rotate: '-15deg'}] },
+  floatingPizza: { position: 'absolute', top: 15, right: -10, width: 80, height: 80, transform: [{rotate: '15deg'}] },
+  heroTextCenter: { alignItems: 'center' },
+  heroText70: { color: '#fff', fontSize: 38, fontWeight: '900', letterSpacing: -1, textShadowColor: '#fc8019', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 1 },
+  heroTextUpTo: { color: '#fbbf24', fontSize: 16, fontWeight: '900', letterSpacing: 2 },
+  
+  yellowCard: { backgroundColor: '#ffdd00', width: 130, height: 170, borderRadius: 16, marginRight: 15, padding: 12, overflow: 'hidden', position: 'relative' },
+  yellowTitle: { fontSize: 15, fontWeight: '900', color: '#1c1c1c', textAlign: 'center', lineHeight: 20 },
+  yellowBadgeWrapper: { position: 'absolute', bottom: 20, left: 15, zIndex: 10 },
+  yellowBadge: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#1c248b', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  yellowBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', textAlign: 'center' },
+  yellowImg: { position: 'absolute', bottom: -10, right: -10, width: 90, height: 90, resizeMode: 'cover' },
+
+  sectionContainer: { paddingHorizontal: 15, marginTop: 25 },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: '#1c1c1c', marginBottom: 15 },
+  
+  topRatedCard: { width: 140, marginRight: 15 },
+  topRatedImgContainer: { width: '100%', height: 140, borderRadius: 16, overflow: 'hidden', position: 'relative', marginBottom: 8 },
+  topRatedImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  topRatedOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, paddingTop: 20, backgroundColor: 'rgba(0,0,0,0.6)' },
+  topRatedOffer: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  topRatedSubOffer: { color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: 'bold' },
+  heartIcon: { position: 'absolute', top: 8, right: 8 },
+  topRatedName: { fontSize: 15, fontWeight: '800', color: '#1c1c1c', marginBottom: 2 },
+  topRatedMeta: { fontSize: 12, color: '#24963f', fontWeight: '700', marginBottom: 2 },
+  topRatedDesc: { fontSize: 12, color: '#686b78' },
+  
+  mindScroll: { paddingBottom: 10 },
+  mindItem: { width: 80, alignItems: 'center', marginRight: 15 },
+  mindImg: { width: 70, height: 70, borderRadius: 35, marginBottom: 8 },
+  mindText: { fontSize: 13, fontWeight: '700', color: '#4b5563', textAlign: 'center' },
+
+  filterPillsSection: { paddingHorizontal: 15, marginTop: 15, marginBottom: 10 },
+  pillBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb', marginRight: 10, backgroundColor: '#fff' },
+  pillText: { fontSize: 12, fontWeight: '700', color: '#4b5563' },
+
+  mainRestCard: { marginBottom: 30 },
+  mainRestImgContainer: { width: '100%', height: 220, borderRadius: 20, overflow: 'hidden', position: 'relative', marginBottom: 12 },
+  mainRestImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  mainHeartIcon: { position: 'absolute', top: 15, right: 15 },
+  imageDots: { position: 'absolute', top: 15, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center' },
+  imgDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,255,255,0.5)', marginHorizontal: 2 },
+  mainRestOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 15, paddingTop: 40, backgroundColor: 'rgba(0,0,0,0.7)' },
+  mainRestOffer: { color: '#fff', fontSize: 20, fontWeight: '900' },
+  mainRestTimeBadge: { position: 'absolute', bottom: 15, right: 15, backgroundColor: '#fff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  mainRestTimeText: { color: '#1c1c1c', fontSize: 12, fontWeight: '900' },
+  mainRestInfo: { paddingHorizontal: 5 },
+  mainRestName: { fontSize: 20, fontWeight: '900', color: '#1c1c1c', marginBottom: 4 },
+  mainRestRating: { fontSize: 14, color: '#4b5563', fontWeight: '600', marginBottom: 4 },
+  mainRestCuisine: { fontSize: 14, color: '#686b78' }
 });
