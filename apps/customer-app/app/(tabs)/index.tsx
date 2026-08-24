@@ -34,6 +34,7 @@ export default function HomeScreen() {
 
   // Animations
   const scrollY = useRef(new Animated.Value(0)).current;
+  const scrollX = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const searchWidth = useRef(new Animated.Value(width - 40)).current;
@@ -279,21 +280,43 @@ export default function HomeScreen() {
 
         {/* Hero Banners */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            <FlatList 
+            <Animated.FlatList 
                 ref={flatListRef}
                 data={BANNERS}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 snapToInterval={width - 20}
                 decelerationRate="fast"
+                onScroll={Animated.event(
+                  [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                  { useNativeDriver: false }
+                )}
+                scrollEventThrottle={16}
                 onMomentumScrollEnd={(e) => {
                   const contentOffset = e.nativeEvent.contentOffset.x;
                   currentSlide.current = Math.round(contentOffset / (width - 20));
                 }}
-                contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 25 }}
+                contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 15 }}
                 renderItem={renderBanner}
-                keyExtractor={item => item.id}
+                keyExtractor={(item: any) => item.id}
             />
+            {/* Paging Dots */}
+            <View style={styles.dotContainer}>
+              {BANNERS.map((_, i) => {
+                const inputRange = [(i - 1) * (width - 20), i * (width - 20), (i + 1) * (width - 20)];
+                const dotWidth = scrollX.interpolate({
+                  inputRange,
+                  outputRange: [8, 24, 8],
+                  extrapolate: 'clamp'
+                });
+                const opacity = scrollX.interpolate({
+                  inputRange,
+                  outputRange: [0.3, 1, 0.3],
+                  extrapolate: 'clamp'
+                });
+                return <Animated.View key={i} style={[styles.dot, { width: dotWidth, opacity }]} />
+              })}
+            </View>
         </Animated.View>
 
         {/* Categories */}
@@ -382,8 +405,11 @@ const styles = StyleSheet.create({
   bannerDiscount: { color: '#fff', fontSize: 32, fontWeight: '900', marginBottom: 2 },
   bannerSub: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '800', marginBottom: 12, letterSpacing: 0.5 },
   bannerDesc: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '600', marginBottom: 15 },
-  bannerBtn: { backgroundColor: '#fff', alignSelf: 'flex-start', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20 },
-  bannerBtnText: { color: '#111827', fontWeight: '900', fontSize: 12, letterSpacing: 0.5 },
+  bannerBtn: { backgroundColor: '#fff', alignSelf: 'flex-start', paddingHorizontal: 22, paddingVertical: 12, borderRadius: 30, shadowColor: '#fff', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  bannerBtnText: { color: '#111827', fontWeight: '900', fontSize: 13, letterSpacing: 0.8 },
+  
+  dotContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 25, marginTop: 5 },
+  dot: { height: 8, borderRadius: 4, backgroundColor: '#fc8019', marginHorizontal: 4 },
 
   sectionContainer: { marginHorizontal: 20, marginBottom: 25 },
   sectionTitle: { fontSize: 22, fontWeight: '900', color: '#111827', marginBottom: 20, letterSpacing: -0.5 },
