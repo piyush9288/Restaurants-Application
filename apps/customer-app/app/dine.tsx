@@ -52,7 +52,7 @@ export default function DineScreen() {
 
                     <Text style={styles.sectionTitle}>Top Trending Restaurants</Text>
                     {topRestaurants.map((rest, i) => (
-                        <TouchableOpacity key={i} style={styles.restCard}>
+                        <TouchableOpacity key={i} style={styles.restCard} onPress={() => router.push(`/restaurant/${i+10}?name=${encodeURIComponent(rest.name)}`)}>
                             <Image source={{uri: rest.img}} style={styles.restImg} />
                             <View style={styles.restOverlay}>
                                 <Text style={styles.restDiscount}>{rest.discount}</Text>
