@@ -49,11 +49,14 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 40, marginBottom: 20}}>
         <Text style={styles.title}>What would you like to eat?</Text>
-        {isAuthenticated ? (
-          <Text onPress={handleLogout} style={{color: '#6c757d', fontWeight: 'bold'}}>Logout</Text>
-        ) : (
-          <Link href="/login" style={{color: '#ff5a5f', fontWeight: 'bold'}}>Login</Link>
-        )}
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 15}}>
+          <Link href="/help"><Text style={{fontSize: 24}}>🎧</Text></Link>
+          {isAuthenticated ? (
+            <Text onPress={handleLogout} style={{color: '#6c757d', fontWeight: 'bold'}}>Logout</Text>
+          ) : (
+            <Link href="/login" style={{color: '#ff5a5f', fontWeight: 'bold'}}>Login</Link>
+          )}
+        </View>
       </View>
       
       {loading ? (
