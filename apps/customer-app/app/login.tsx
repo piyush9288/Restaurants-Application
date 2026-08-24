@@ -75,10 +75,15 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  },
-  secondaryButtonText: {
-    color: '#ff5a5f',
-    fontSize: 16,
-    fontWeight: 'bold',
-  }
+  container: { flex: 1, backgroundColor: '#f0f2f5', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  card: { width: '100%', maxWidth: 400, backgroundColor: '#fff', borderRadius: 20, padding: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  logo: { fontSize: 40, textAlign: 'center', marginBottom: 10 },
+  title: { fontSize: 28, fontWeight: '800', color: '#1a1a1a', marginBottom: 8, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: '#666', marginBottom: 30, textAlign: 'center' },
+  input: { height: 55, backgroundColor: '#f8f9fa', borderWidth: 1, borderColor: '#e1e4e8', borderRadius: 12, paddingHorizontal: 15, marginBottom: 16, fontSize: 16, color: '#333' },
+  primaryButton: { backgroundColor: '#ff4b4b', height: 55, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginTop: 10, shadowColor: '#ff4b4b', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold', letterSpacing: 0.5 },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 25 },
+  footerText: { color: '#666', fontSize: 15 },
+  link: { color: '#ff4b4b', fontSize: 15, fontWeight: 'bold' }
 });
