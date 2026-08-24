@@ -10,6 +10,7 @@ class CustomerProfile(Base):
     name = Column(String, nullable=False)
     phone = Column(String, nullable=True)
     address = Column(String, nullable=True)
+    pincode = Column(String, nullable=True)
 
 class RestaurantProfile(Base):
     __tablename__ = "restaurants"
@@ -19,6 +20,7 @@ class RestaurantProfile(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     address = Column(String, nullable=True)
+    pincode = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     is_verified = Column(Boolean, default=False)
     

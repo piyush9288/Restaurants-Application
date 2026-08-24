@@ -13,6 +13,15 @@ def on_startup():
             conn.execute(text("ALTER TABLE customer_profiles ADD COLUMN address VARCHAR;"))
             conn.commit()
             print("Added address column to customer_profiles")
+    except Exception:
+        pass
+        
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE customer_profiles ADD COLUMN pincode VARCHAR;"))
+            conn.execute(text("ALTER TABLE restaurants ADD COLUMN pincode VARCHAR;"))
+            conn.commit()
+            print("Added pincode columns")
     except Exception as e:
         print("Column might already exist or error:", e)
 

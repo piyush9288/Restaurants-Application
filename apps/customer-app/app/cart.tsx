@@ -21,6 +21,18 @@ export default function CartScreen() {
     if (cart.length === 0) return;
 
     try {
+      // First check if profile is complete
+      const profileRes = await fetch(`${API_URL}/api/users/me/profile`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const profileData = await profileRes.json();
+      
+      if (!profileData.name || !profileData.phone || !profileData.address || !profileData.pincode) {
+        if (Platform.OS === 'web') alert("Please complete your profile (Name, Phone, Address, Pincode) before ordering!");
+        else Alert.alert("Profile Incomplete", "Please complete your profile (Name, Phone, Address, Pincode) before ordering!");
+        router.push('/profile');
+        return;
+      }
       const orderPayload = {
         restaurant_id: Number(restaurantId),
         items: cart.map(item => ({

@@ -17,13 +17,24 @@ export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const router = useRouter();
 
   useFocusEffect(
     useCallback(() => {
-      setIsAuthenticated(typeof window !== 'undefined' && !!localStorage.getItem('token'));
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      setIsAuthenticated(!!token);
+      
+      if (token) {
+        fetch(API_URL + '/api/users/me/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.pincode) setUserProfile(data);
+        }).catch(() => {});
+      }
     }, [])
   );
 
@@ -41,18 +52,28 @@ export default function HomeScreen() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       setIsAuthenticated(false);
+      setUserProfile(null);
       alert("Logged out successfully");
     }
   };
 
   const filteredRestaurants = restaurants.filter((r: any) => {
+    // Basic search filtering
     const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Category filtering
+    let matchesCategory = true;
     if (activeCategory && activeCategory !== 'Offers') {
-      // Very basic mock filtering based on name or description matching category
-      const matchesCategory = r.description.toLowerCase().includes(activeCategory.toLowerCase()) || r.name.toLowerCase().includes(activeCategory.toLowerCase());
-      return matchesSearch && matchesCategory;
+      matchesCategory = r.description.toLowerCase().includes(activeCategory.toLowerCase()) || r.name.toLowerCase().includes(activeCategory.toLowerCase());
     }
-    return matchesSearch;
+    
+    // Pincode matching (if user has pincode and restaurant has pincode)
+    let matchesPincode = true;
+    if (userProfile?.pincode && r.pincode) {
+        matchesPincode = userProfile.pincode === r.pincode;
+    }
+
+    return matchesSearch && matchesCategory && matchesPincode;
   });
 
   const renderRestaurant = ({ item, index }: { item: any, index: number }) => {
@@ -99,7 +120,9 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.locationContainer}>
           <Text style={styles.locationLabel}>Delivering to</Text>
-          <Text style={styles.locationValue}>Home • New Delhi, India 🔽</Text>
+          <Text style={styles.locationValue} numberOfLines={1}>
+             {userProfile?.pincode ? `${userProfile.address.split(',')[0]} • ${userProfile.pincode} 🔽` : 'Home • New Delhi, India 🔽'}
+          </Text>
         </View>
         <View style={styles.headerRight}>
           <Link href="/help"><Text style={styles.iconButton}>🎧</Text></Link>

@@ -13,12 +13,14 @@ class ProfileUpdate(BaseModel):
     name: str
     phone: str
     address: str
+    pincode: Optional[str] = None
     
 class ProfileResponse(BaseModel):
     email: str
     name: Optional[str]
     phone: Optional[str]
     address: Optional[str]
+    pincode: Optional[str]
 
 @router.get("/me/profile", response_model=ProfileResponse)
 def get_my_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -28,11 +30,12 @@ def get_my_profile(current_user: User = Depends(get_current_user), db: Session =
             "email": current_user.email,
             "name": profile.name if profile else "",
             "phone": profile.phone if profile else "",
-            "address": profile.address if profile else ""
+            "address": profile.address if profile else "",
+            "pincode": profile.pincode if profile else ""
         }
     else:
         # Just return email for non-customers for now
-        return {"email": current_user.email, "name": "", "phone": "", "address": ""}
+        return {"email": current_user.email, "name": "", "phone": "", "address": "", "pincode": ""}
 
 @router.put("/me/profile")
 def update_profile(profile_data: ProfileUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -44,8 +47,9 @@ def update_profile(profile_data: ProfileUpdate, current_user: User = Depends(get
         profile.name = profile_data.name
         profile.phone = profile_data.phone
         profile.address = profile_data.address
+        profile.pincode = profile_data.pincode
     else:
-        profile = CustomerProfile(user_id=current_user.id, name=profile_data.name, phone=profile_data.phone, address=profile_data.address)
+        profile = CustomerProfile(user_id=current_user.id, name=profile_data.name, phone=profile_data.phone, address=profile_data.address, pincode=profile_data.pincode)
         db.add(profile)
         
     db.commit()

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Platform, SafeAreaView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Platform, SafeAreaView, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 
 // @ts-ignore
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -9,9 +10,11 @@ export default function ProfileScreen() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [pincode, setPincode] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,6 +33,7 @@ export default function ProfileScreen() {
           setName(data.name || '');
           setPhone(data.phone || '');
           setAddress(data.address || '');
+          setPincode(data.pincode || '');
           setEmail(data.email || '');
         }
       } catch (err) {
@@ -41,7 +45,50 @@ export default function ProfileScreen() {
     fetchProfile();
   }, []);
 
+  const handleFetchLocation = async () => {
+    if (Platform.OS === 'web') {
+      alert("Auto-fetch location is better supported on mobile devices. Please enter manually.");
+      return;
+    }
+    
+    setFetchingLocation(true);
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission to access location was denied');
+        setFetchingLocation(false);
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+      
+      if (reverseGeocode && reverseGeocode.length > 0) {
+        const loc = reverseGeocode[0];
+        const fullAddress = `${loc.name ? loc.name + ', ' : ''}${loc.street ? loc.street + ', ' : ''}${loc.city ? loc.city + ', ' : ''}${loc.region ? loc.region : ''}`;
+        setAddress(fullAddress);
+        if (loc.postalCode) setPincode(loc.postalCode);
+      } else {
+        Alert.alert("Could not fetch address details");
+      }
+    } catch (err) {
+      Alert.alert("Error fetching location");
+      console.error(err);
+    } finally {
+      setFetchingLocation(false);
+    }
+  };
+
   const handleSave = async () => {
+    if (!name || !phone || !address || !pincode) {
+       if (Platform.OS === 'web') alert("Please fill all details completely!");
+       else Alert.alert("Error", "Please fill all details completely!");
+       return;
+    }
+    
     setSaving(true);
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     try {
@@ -51,7 +98,7 @@ export default function ProfileScreen() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ name, phone, address })
+        body: JSON.stringify({ name, phone, address, pincode })
       });
       if (res.ok) {
         if (Platform.OS === 'web') alert("Profile updated successfully!");
@@ -83,7 +130,7 @@ export default function ProfileScreen() {
         <View style={{width: 30}} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.avatarContainer}>
           <Text style={{fontSize: 60}}>👤</Text>
           <Text style={{marginTop: 10, fontSize: 16, color: '#666'}}>{email}</Text>
@@ -95,8 +142,16 @@ export default function ProfileScreen() {
         <Text style={styles.label}>Phone Number</Text>
         <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Enter phone number" keyboardType="phone-pad" />
 
-        <Text style={styles.label}>Delivery Address</Text>
-        <TextInput style={styles.input} value={address} onChangeText={setAddress} placeholder="Enter your full address" multiline numberOfLines={3} style={[styles.input, {height: 80}]} />
+        <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8}}>
+            <Text style={[styles.label, {marginBottom: 0}]}>Delivery Address</Text>
+            <TouchableOpacity onPress={handleFetchLocation} style={styles.gpsBtn}>
+                <Text style={styles.gpsBtnText}>{fetchingLocation ? "Fetching..." : "📍 Auto-fetch"}</Text>
+            </TouchableOpacity>
+        </View>
+        <TextInput style={[styles.input, {height: 80}]} value={address} onChangeText={setAddress} placeholder="Enter your full address" multiline numberOfLines={3} />
+
+        <Text style={styles.label}>Pincode</Text>
+        <TextInput style={styles.input} value={pincode} onChangeText={setPincode} placeholder="e.g. 110001" keyboardType="numeric" />
 
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
           <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save Details"}</Text>
@@ -109,7 +164,7 @@ export default function ProfileScreen() {
         }}>
           <Text style={styles.logoutBtnText}>Logout</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -125,5 +180,7 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: '#fc8019', paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
   saveBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   logoutBtn: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#ff4b4b', paddingVertical: 15, borderRadius: 8, alignItems: 'center', marginTop: 15 },
-  logoutBtnText: { color: '#ff4b4b', fontWeight: '800', fontSize: 16 }
+  logoutBtnText: { color: '#ff4b4b', fontWeight: '800', fontSize: 16 },
+  gpsBtn: { backgroundColor: '#e9ecef', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
+  gpsBtnText: { fontSize: 12, fontWeight: '700', color: '#1c1c1c' }
 });
