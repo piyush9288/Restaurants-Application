@@ -1,161 +1,136 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, Platform } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, Image, ScrollView, SafeAreaView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState, useEffect } from 'react';
 import { useCart } from '../CartContext';
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
+// @ts-ignore
+const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
 
 export default function RestaurantMenuScreen() {
   const { id, name } = useLocalSearchParams();
-  const [menuItems, setMenuItems] = useState([]);
+  const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { addToCart, cart } = useCart();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetch(`${API_URL}/api/restaurants/${id}/menu`)
       .then(res => res.json())
       .then(data => {
-        setMenuItems(data);
+        setMenu(Array.isArray(data) ? data : []);
         setLoading(false);
       })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .catch(() => setLoading(false));
   }, [id]);
 
-  const handleAdd = (item: any) => {
-    addToCart(item, id as string);
+  const handleAddToCart = (item: any) => {
+    addToCart(item, Number(id));
+    alert(`${item.name} added to cart!`);
+  };
+
+  const renderItem = ({ item, index }: { item: any, index: number }) => {
+    const foodImages = [
+      'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80',
+      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&q=80',
+      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80',
+      'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=500&q=80'
+    ];
+    const imgUrl = foodImages[index % foodImages.length];
+
+    return (
+      <View style={styles.menuItem}>
+        <View style={styles.menuInfo}>
+          <Text style={styles.itemVeg}>🟢 VEG</Text>
+          <Text style={styles.itemName}>{item.name}</Text>
+          <Text style={styles.itemPrice}>₹{item.price}</Text>
+          <Text style={styles.itemDescription} numberOfLines={2}>{item.description}</Text>
+        </View>
+        <View style={styles.menuImageContainer}>
+          <Image source={{ uri: imgUrl }} style={styles.menuImage} />
+          <TouchableOpacity style={styles.addButton} onPress={() => handleAddToCart(item)}>
+            <Text style={styles.addButtonText}>ADD</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container}>
+      {/* Sticky Header */}
+      <View style={styles.stickyHeader}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={{fontSize: 24, fontWeight: 'bold'}}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{name}'s Menu</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{name}</Text>
+        <View style={{width: 30}} />
       </View>
 
-      <View style={styles.cartBar}>
-        <Text style={{fontWeight: 'bold'}}>Cart Items: {cart.reduce((a: any, b: any) => a + b.quantity, 0)}</Text>
-        <TouchableOpacity onPress={() => router.push('/cart')} style={styles.checkoutBtn}>
-          <Text style={{color: 'white', fontWeight: 'bold'}}>View Cart</Text>
-        </TouchableOpacity>
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.heroContainer}>
+           <Image source={{uri: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&q=80'}} style={styles.heroImage} />
+           <View style={styles.heroOverlay}>
+             <Text style={styles.heroTitle}>{name}</Text>
+             <Text style={styles.heroSub}>North Indian • Chinese • Fast Food</Text>
+             <View style={styles.ratingRow}>
+               <Text style={styles.ratingStar}>⭐ 4.2 (1K+ reviews)</Text>
+               <Text style={styles.deliveryTime}>⏱ 30-35 min</Text>
+             </View>
+           </View>
+        </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#ff5a5f" style={{marginTop: 50}} />
-      ) : (
-        <FlatList
-          data={menuItems}
-          keyExtractor={(item: any) => item.id.toString()}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          renderItem={({ item }) => (
-            <View style={styles.itemCard}>
-              <View style={{height: 70, width: 70, backgroundColor: '#ffe5e5', borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 15}}>
-                 <Text style={{fontSize: 24}}>🍽️</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemDesc}>{item.description}</Text>
-                <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-              </View>
-              <TouchableOpacity style={styles.addButton} onPress={() => handleAdd(item)}>
-                <Text style={styles.addText}>Add</Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>Recommended</Text>
+          {loading ? (
+            <ActivityIndicator size="large" color="#fc8019" style={{marginTop: 50}} />
+          ) : (
+            <FlatList
+              data={menu}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderItem}
+              scrollEnabled={false}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              ListEmptyComponent={<Text style={styles.emptyText}>Menu is currently empty.</Text>}
+            />
           )}
-          ListEmptyComponent={<Text style={styles.emptyText}>No menu items found.</Text>}
-        />
-      )}
-    </View>
+        </View>
+      </ScrollView>
+
+      {/* Floating View Cart Button could go here */}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    backgroundColor: '#fff',
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cartBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 15,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderColor: '#eee'
-  },
-  checkoutBtn: {
-    backgroundColor: '#ff5a5f',
-    padding: 10,
-    borderRadius: 8
-  },
-  backButton: {
-    marginRight: 15,
-  },
-  backText: {
-    color: '#ff5a5f',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  itemCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginTop: 15,
-    padding: 15,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  itemName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  itemDesc: {
-    color: '#6c757d',
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  addButton: {
-    backgroundColor: '#ff5a5f',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  addText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 50,
-    color: '#6c757d',
-  }
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  stickyHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, height: 60, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? 25 : 0, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  backButton: { padding: 5 },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1c1c1c' },
+  
+  heroContainer: { backgroundColor: '#fff', marginBottom: 10 },
+  heroImage: { width: '100%', height: 200, resizeMode: 'cover' },
+  heroOverlay: { padding: 20, backgroundColor: '#fff', borderTopLeftRadius: 25, borderTopRightRadius: 25, marginTop: -25, shadowColor: '#000', shadowOffset: {width:0, height:-2}, shadowOpacity: 0.1, shadowRadius: 4, elevation: 5 },
+  heroTitle: { fontSize: 26, fontWeight: '900', color: '#1c1c1c', marginBottom: 5 },
+  heroSub: { fontSize: 14, color: '#686b78', marginBottom: 15 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center' },
+  ratingStar: { fontSize: 13, fontWeight: '700', color: '#1c1c1c', marginRight: 15 },
+  deliveryTime: { fontSize: 13, fontWeight: '700', color: '#1c1c1c' },
+
+  menuSection: { backgroundColor: '#fff', padding: 20 },
+  sectionTitle: { fontSize: 20, fontWeight: '900', marginBottom: 20, color: '#1c1c1c' },
+  
+  menuItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 15 },
+  menuInfo: { flex: 1, paddingRight: 15 },
+  itemVeg: { fontSize: 10, marginBottom: 5 },
+  itemName: { fontSize: 17, fontWeight: '700', color: '#3e4152', marginBottom: 5 },
+  itemPrice: { fontSize: 15, fontWeight: '600', color: '#3e4152', marginBottom: 10 },
+  itemDescription: { fontSize: 13, color: '#686b78', lineHeight: 18 },
+  
+  menuImageContainer: { alignItems: 'center' },
+  menuImage: { width: 120, height: 120, borderRadius: 12 },
+  addButton: { position: 'absolute', bottom: -15, backgroundColor: '#fff', paddingVertical: 8, paddingHorizontal: 25, borderRadius: 8, borderWidth: 1, borderColor: '#d4d5d9', shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.1, shadowRadius: 3, elevation: 3 },
+  addButtonText: { color: '#60b246', fontWeight: '900', fontSize: 16 },
+  
+  separator: { height: 1, backgroundColor: '#e9e9eb', marginVertical: 10 },
+  emptyText: { textAlign: 'center', color: '#686b78', marginTop: 20 }
 });
