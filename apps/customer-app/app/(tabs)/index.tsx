@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Image, TextInput, SafeAreaView, Platform, Animated, Dimensions, Switch, Easing, LayoutAnimation, UIManager } from 'react-native';
 import { router } from 'expo-router';
+import * as Location from 'expo-location';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -65,6 +66,10 @@ export default function HomeScreen() {
   
   const [loading, setLoading] = useState(true);
   const [appReady, setAppReady] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  
+  const [locationTitle, setLocationTitle] = useState('Fetching location...');
+  const [locationSub, setLocationSub] = useState('Please wait...');
   
   const [activeTab, setActiveTab] = useState('ALL');
   const TABS = ['ALL', 'STORE', 'OFFERS', 'FOOD ON TRAIN', 'EATRIGHT'];
@@ -91,6 +96,49 @@ export default function HomeScreen() {
   const charIndex = useRef(0);
 
   useEffect(() => {
+      // Profile and Location Setup
+      const fetchProfileAndLocation = async () => {
+          try {
+              const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+              let profileData = null;
+              
+              if (token) {
+                  const res = await fetch(API_URL + '/api/users/me/profile', { headers: { 'Authorization': `Bearer ${token}` } });
+                  if (res.ok) {
+                      profileData = await res.json();
+                      setUserProfile(profileData);
+                  }
+              }
+
+              if (profileData && profileData.pincode) {
+                  setLocationTitle('Home');
+                  setLocationSub(`${profileData.address_line_1}, ${profileData.city}, ${profileData.pincode}`);
+              } else {
+                  // Fallback to auto GPS
+                  let { status } = await Location.requestForegroundPermissionsAsync();
+                  if (status !== 'granted') {
+                      setLocationTitle('Location Denied');
+                      setLocationSub('Please enable GPS manually in settings');
+                      return;
+                  }
+                  
+                  let loc = await Location.getCurrentPositionAsync({});
+                  let geocode = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+                  
+                  if (geocode.length > 0) {
+                      const place = geocode[0];
+                      setLocationTitle(place.name || place.city || 'Current Location');
+                      let fullAddress = [place.street, place.subregion, place.city].filter(Boolean).join(', ');
+                      setLocationSub(fullAddress || 'Unknown address');
+                  }
+              }
+          } catch (e) {
+              setLocationTitle('Select Location');
+              setLocationSub('Tap here to set your delivery location');
+          }
+      };
+      
+      fetchProfileAndLocation();
     // Start Floating and Shine Animations
     Animated.loop(
         Animated.sequence([
@@ -278,9 +326,9 @@ export default function HomeScreen() {
                     <View style={styles.locationHeaderRow}>
                         <View style={styles.locationHeader}>
                             <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                <Text style={styles.locationTitle}>Home, Phase 1 &gt;</Text>
+                                <Text style={styles.locationTitle}>{locationTitle} &gt;</Text>
                             </View>
-                            <Text style={styles.locationSub} numberOfLines={1}>Block A, Cyber City, Gurgaon, India</Text>
+                            <Text style={styles.locationSub} numberOfLines={1}>{locationSub}</Text>
                         </View>
                         <TouchableOpacity onPress={() => router.push('/profile')} style={styles.profileIconBtn}>
                             <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}} style={styles.profileIcon} />
@@ -296,7 +344,7 @@ export default function HomeScreen() {
                         </PremiumButton>
                         
                         <PremiumButton style={[styles.bentoCard, {backgroundColor: '#8b5cf6'}]} onPress={() => router.push('/mart')}>
-                            <View style={styles.bentoTimeBadge}><Text style={styles.bentoTimeText}>10 MINS</Text></View>
+                            <View style={styles.bentoTimeBadge}><Text style={styles.bentoTimeText}>⏱️ 10 MINS</Text></View>
                             <Text style={styles.bentoTitle}>Mart</Text>
                             <Text style={styles.bentoSub}>Groceries</Text>
                             <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3753/3753696.png'}} style={styles.bentoImg} />
@@ -370,98 +418,126 @@ export default function HomeScreen() {
               </View>
           ) : (
               <View style={styles.contentBackground}>
-                  {/* HERO BANNER SECTION */}
-                  <View style={styles.heroBlueBanner}>
-                      <Animated.Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={[styles.floatingBurger, { transform: [{ translateY: floatAnim1 }, { rotate: '-15deg' }] }]} />
-                      <Animated.Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png'}} style={[styles.floatingPizza, { transform: [{ translateY: floatAnim2 }, { rotate: '15deg' }] }]} />
-                      
-                      <View style={styles.heroTextCenter}>
-                          <Text style={styles.heroText70}>60% OFF</Text>
-                          <Text style={styles.heroTextUpTo}>UP TO ₹120 ON TOP BRANDS</Text>
-                          <Animated.View style={[styles.shineEffect, { transform: [{ translateX: shineAnim }] }]} />
-                      </View>
+                  {activeTab === 'ALL' ? (
+                      <>
+                          {/* HERO BANNER SECTION */}
+                          <View style={styles.heroBlueBanner}>
+                              <Animated.Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={[styles.floatingBurger, { transform: [{ translateY: floatAnim1 }, { rotate: '-15deg' }] }]} />
+                              <Animated.Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png'}} style={[styles.floatingPizza, { transform: [{ translateY: floatAnim2 }, { rotate: '15deg' }] }]} />
+                              
+                              <View style={styles.heroTextCenter}>
+                                  <Text style={styles.heroText70}>60% OFF</Text>
+                                  <Text style={styles.heroTextUpTo}>UP TO ₹120 ON TOP BRANDS</Text>
+                                  <Animated.View style={[styles.shineEffect, { transform: [{ translateX: shineAnim }] }]} />
+                              </View>
 
-                      <FlatList 
-                          data={YELLOW_OFFERS}
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={{paddingHorizontal: 20, paddingTop: 30, paddingBottom: 15}}
-                          renderItem={({ item }) => (
-                              <PremiumButton style={styles.yellowCard}>
-                                  <View style={styles.yellowTextContainer}>
-                                      <Text style={styles.yellowTitle}>{item.title}</Text>
-                                  </View>
-                                  {item.badge && (
-                                     <View style={styles.yellowBadgeWrapper}>
-                                         <View style={styles.yellowBadge}>
-                                            <Text style={styles.yellowBadgeText}>{item.badge}</Text>
-                                         </View>
-                                     </View>
+                              <FlatList 
+                                  data={YELLOW_OFFERS}
+                                  horizontal
+                                  showsHorizontalScrollIndicator={false}
+                                  contentContainerStyle={{paddingHorizontal: 20, paddingTop: 30, paddingBottom: 15}}
+                                  renderItem={({ item }) => (
+                                      <PremiumButton style={styles.yellowCard}>
+                                          <View style={styles.yellowTextContainer}>
+                                              <Text style={styles.yellowTitle}>{item.title}</Text>
+                                          </View>
+                                          {item.badge && (
+                                             <View style={styles.yellowBadgeWrapper}>
+                                                 <View style={styles.yellowBadge}>
+                                                    <Text style={styles.yellowBadgeText}>{item.badge}</Text>
+                                                 </View>
+                                             </View>
+                                          )}
+                                          <Image source={{ uri: item.img }} style={styles.yellowImg} />
+                                      </PremiumButton>
                                   )}
-                                  <Image source={{ uri: item.img }} style={styles.yellowImg} />
-                              </PremiumButton>
-                          )}
-                          keyExtractor={item => item.id}
-                      />
-                  </View>
-
-                  {/* WHAT'S ON YOUR MIND? */}
-                  <View style={styles.sectionContainer}>
-                      <View style={styles.sectionHeaderRow}>
-                          <Text style={styles.sectionTitle}>What's on your mind?</Text>
-                      </View>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mindScroll}>
-                          {CATEGORIES.map(cat => (
-                              <PremiumButton 
-                                key={cat.id} 
-                                style={styles.mindItem}
-                                onPress={() => toggleCategory(cat.keyword)}
-                              >
-                                  <View style={[styles.mindImgContainer, activeCategory === cat.keyword && styles.mindImgContainerActive]}>
-                                      <Image source={{uri: cat.img}} style={styles.mindImg} />
-                                  </View>
-                                  <Text style={[styles.mindText, activeCategory === cat.keyword && styles.mindTextActive]}>{cat.name}</Text>
-                              </PremiumButton>
-                          ))}
-                      </ScrollView>
-                  </View>
-
-                  {/* FILTER PILLS */}
-                  <View style={styles.filterPillsSection}>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                          {FILTER_PILLS.map((pill, idx) => (
-                              <TouchableOpacity 
-                                key={idx} 
-                                style={[styles.pillBtn, activeFilter === pill && styles.pillBtnActive]}
-                                onPress={() => toggleFilter(pill)}
-                              >
-                                  <Text style={[styles.pillText, activeFilter === pill && styles.pillTextActive]}>{pill}</Text>
-                              </TouchableOpacity>
-                          ))}
-                      </ScrollView>
-                  </View>
-
-                  {/* ALL RESTAURANTS */}
-                  <View style={styles.sectionContainer}>
-                      <Text style={styles.sectionTitle}>
-                        {restaurants.length > 0 ? `${restaurants.length} premium places to explore` : `No places found`}
-                      </Text>
-                      
-                      {restaurants.length === 0 ? (
-                          <View style={styles.emptyState}>
-                              <Text style={{fontSize: 50, marginBottom: 15}}>🍽️</Text>
-                              <Text style={styles.emptyTitle}>Nothing found here!</Text>
-                              <Text style={styles.emptySub}>Try removing some filters.</Text>
+                                  keyExtractor={item => item.id}
+                              />
                           </View>
-                      ) : (
-                          <FlatList 
-                              data={restaurants}
-                              keyExtractor={(item: any) => item.id.toString()}
-                              renderItem={renderRestaurant}
-                              scrollEnabled={false}
-                          />
-                      )}
-                  </View>
+
+                          {/* WHAT'S ON YOUR MIND? */}
+                          <View style={styles.sectionContainer}>
+                              <View style={styles.sectionHeaderRow}>
+                                  <Text style={styles.sectionTitle}>What's on your mind?</Text>
+                              </View>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mindScroll}>
+                                  {CATEGORIES.map(cat => (
+                                      <PremiumButton 
+                                        key={cat.id} 
+                                        style={styles.mindItem}
+                                        onPress={() => toggleCategory(cat.keyword)}
+                                      >
+                                          <View style={[styles.mindImgContainer, activeCategory === cat.keyword && styles.mindImgContainerActive]}>
+                                              <Image source={{uri: cat.img}} style={styles.mindImg} />
+                                          </View>
+                                          <Text style={[styles.mindText, activeCategory === cat.keyword && styles.mindTextActive]}>{cat.name}</Text>
+                                      </PremiumButton>
+                                  ))}
+                              </ScrollView>
+                          </View>
+
+                          {/* FILTER PILLS */}
+                          <View style={styles.filterPillsSection}>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                  {FILTER_PILLS.map((pill, idx) => (
+                                      <TouchableOpacity 
+                                        key={idx} 
+                                        style={[styles.pillBtn, activeFilter === pill && styles.pillBtnActive]}
+                                        onPress={() => toggleFilter(pill)}
+                                      >
+                                          <Text style={[styles.pillText, activeFilter === pill && styles.pillTextActive]}>{pill}</Text>
+                                      </TouchableOpacity>
+                                  ))}
+                              </ScrollView>
+                          </View>
+
+                          {/* ALL RESTAURANTS */}
+                          <View style={styles.sectionContainer}>
+                              <Text style={styles.sectionTitle}>
+                                {restaurants.length > 0 ? `${restaurants.length} premium places to explore` : `No places found`}
+                              </Text>
+                              
+                              {restaurants.length === 0 ? (
+                                  <View style={styles.emptyState}>
+                                      <Text style={{fontSize: 50, marginBottom: 15}}>🍽️</Text>
+                                      <Text style={styles.emptyTitle}>Nothing found here!</Text>
+                                      <Text style={styles.emptySub}>Try removing some filters.</Text>
+                                  </View>
+                              ) : (
+                                  <FlatList 
+                                      data={restaurants}
+                                      keyExtractor={(item: any) => item.id.toString()}
+                                      renderItem={renderRestaurant}
+                                      scrollEnabled={false}
+                                  />
+                              )}
+                          </View>
+                      </>
+                  ) : activeTab === 'STORE' ? (
+                      <View style={[styles.sectionContainer, {marginTop: 20}]}>
+                          <Text style={styles.sectionTitle}>Local Stores & Supermarkets</Text>
+                          <Text style={{color: '#94a3b8', marginBottom: 20}}>Fresh groceries delivered to your door</Text>
+                          {restaurants.map((item: any, index: number) => (
+                              <View key={item.id.toString()}>{renderRestaurant({item, index})}</View>
+                          ))}
+                      </View>
+                  ) : activeTab === 'OFFERS' ? (
+                      <View style={[styles.sectionContainer, {marginTop: 20}]}>
+                          <Text style={styles.sectionTitle}>Top Offers For You</Text>
+                          <Text style={{color: '#94a3b8', marginBottom: 20}}>Exclusive discounts from premium brands</Text>
+                          {restaurants.map((item: any, index: number) => (
+                              <View key={item.id.toString()}>{renderRestaurant({item, index})}</View>
+                          ))}
+                      </View>
+                  ) : (
+                      <View style={[styles.sectionContainer, {marginTop: 20}]}>
+                          <Text style={styles.sectionTitle}>{activeTab}</Text>
+                          <Text style={{color: '#94a3b8', marginBottom: 20}}>Curated options for you</Text>
+                          {restaurants.map((item: any, index: number) => (
+                              <View key={item.id.toString()}>{renderRestaurant({item, index})}</View>
+                          ))}
+                      </View>
+                  )}
               </View>
           )}
         </ScrollView>
