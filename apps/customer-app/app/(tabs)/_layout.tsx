@@ -57,10 +57,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="cart-tab"
+        name="cart"
         options={{
           title: 'Cart',
-          href: '/cart',
           tabBarIcon: ({ color }) => (
             <View>
                 <SymbolView name={{ ios: 'cart', android: 'shopping-cart', web: 'shopping-cart' }} tintColor={color} size={28} />
@@ -74,10 +73,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="help-tab"
+        name="help"
         options={{
           title: 'Help',
-          href: '/help',
           tabBarIcon: ({ color }) => (
              <SymbolView name={{ ios: 'headphones', android: 'headset', web: 'headset' }} tintColor={color} size={28} />
           ),

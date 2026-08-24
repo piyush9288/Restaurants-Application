@@ -18,7 +18,7 @@ export default function HelpScreen() {
   ];
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{paddingBottom: 90}}>
       <Animated.View style={{ opacity: fadeAnim, padding: 20 }}>
         <Text style={styles.header}>Help & Support</Text>
         <Text style={styles.sub}>How can we help you today?</Text>

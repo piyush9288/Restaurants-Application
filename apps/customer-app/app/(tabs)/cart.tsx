@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, Alert, Platform, SafeAreaView, Animated, TextInput, Modal, KeyboardAvoidingView } from 'react-native';
-import { useCart } from './CartContext';
+import { useCart } from '../CartContext';
 import { useRouter } from 'expo-router';
 
 // @ts-ignore
@@ -273,13 +273,13 @@ const styles = StyleSheet.create({
   separator: { height: 1, backgroundColor: '#e9e9eb', marginVertical: 15 },
   grandTotalText: { fontSize: 18, fontWeight: '900', color: '#1c1c1c' },
   
-  checkoutFooter: { backgroundColor: '#fff', padding: 20, paddingBottom: Platform.OS === 'ios' ? 35 : 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#eee', shadowColor: '#000', shadowOffset: {width: 0, height: -4}, shadowOpacity: 0.05, shadowRadius: 10, elevation: 10 },
+  checkoutFooter: { backgroundColor: '#fff', padding: 20, paddingBottom: Platform.OS === 'ios' ? 100 : 80, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#eee', shadowColor: '#000', shadowOffset: {width: 0, height: -4}, shadowOpacity: 0.05, shadowRadius: 10, elevation: 10 },
   payTotal: { fontSize: 22, fontWeight: '900', color: '#1c1c1c' },
   paySub: { fontSize: 12, fontWeight: '800', color: '#60b246', letterSpacing: 1 },
   checkoutBtn: { backgroundColor: '#fc8019', paddingVertical: 16, paddingHorizontal: 30, borderRadius: 12, shadowColor: '#fc8019', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
   checkoutBtnText: { color: '#fff', fontWeight: '900', fontSize: 16 },
 
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', padding: 20 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', padding: 20, paddingBottom: 100 },
   emptyTitle: { fontSize: 22, fontWeight: '900', color: '#1c1c1c', marginBottom: 10, textAlign: 'center' },
   emptySub: { fontSize: 15, color: '#686b78', textAlign: 'center', marginBottom: 35, lineHeight: 22 },
   browseBtn: { backgroundColor: '#fc8019', paddingVertical: 16, paddingHorizontal: 35, borderRadius: 12, shadowColor: '#fc8019', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
