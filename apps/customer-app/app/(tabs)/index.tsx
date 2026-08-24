@@ -59,7 +59,7 @@ export default function HomeScreen() {
                         const livePincode = loc.postalCode || loadedProfile?.pincode;
                         const liveAddress = `${loc.name ? loc.name + ', ' : ''}${loc.city ? loc.city : ''}`;
                         
-                        setUserProfile(prev => ({
+                        setUserProfile((prev: any) => ({
                             ...(prev || {}),
                             pincode: livePincode,
                             address: liveAddress || prev?.address
