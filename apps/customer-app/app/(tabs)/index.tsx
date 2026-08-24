@@ -351,7 +351,9 @@ export default function HomeScreen() {
                           contentContainerStyle={{paddingHorizontal: 20, paddingTop: 30, paddingBottom: 15}}
                           renderItem={({ item }) => (
                               <PremiumButton style={styles.yellowCard}>
-                                  <Text style={styles.yellowTitle}>{item.title}</Text>
+                                  <View style={styles.yellowTextContainer}>
+                                      <Text style={styles.yellowTitle}>{item.title}</Text>
+                                  </View>
                                   {item.badge && (
                                      <View style={styles.yellowBadgeWrapper}>
                                          <View style={styles.yellowBadge}>
@@ -483,16 +485,17 @@ const styles = StyleSheet.create({
   floatingBurger: { position: 'absolute', top: 25, left: 0, width: 85, height: 85, opacity: 0.9, resizeMode: 'contain' },
   floatingPizza: { position: 'absolute', top: 15, right: 0, width: 95, height: 95, opacity: 0.9, resizeMode: 'contain' },
   heroTextCenter: { alignItems: 'center', zIndex: 5, overflow: 'hidden', paddingHorizontal: 40 },
-  heroText70: { color: '#fff', fontSize: 42, fontWeight: '900', letterSpacing: -1, textShadowColor: '#f59e0b', textShadowOffset: {width: 2, height: 4}, textShadowRadius: 10 },
-  heroTextUpTo: { color: '#fcd34d', fontSize: 13, fontWeight: '900', letterSpacing: 2, marginTop: 5, textAlign: 'center' },
-  shineEffect: { position: 'absolute', top: -20, left: 0, width: 40, height: 150, backgroundColor: 'rgba(255,255,255,0.4)', transform: [{rotate: '20deg'}], zIndex: 10 },
+  heroText70: { color: '#fff', fontSize: 34, fontWeight: '900', letterSpacing: 0, textShadowColor: '#f59e0b', textShadowOffset: {width: 1, height: 2}, textShadowRadius: 5 },
+  heroTextUpTo: { color: '#fcd34d', fontSize: 11, fontWeight: '900', letterSpacing: 1.5, marginTop: 3, textAlign: 'center' },
+  shineEffect: { position: 'absolute', top: -20, left: 0, width: 30, height: 150, backgroundColor: 'rgba(255,255,255,0.3)', transform: [{rotate: '20deg'}], zIndex: 10 },
   
-  yellowCard: { backgroundColor: '#f59e0b', width: 140, height: 180, borderRadius: 24, marginRight: 16, padding: 15, overflow: 'hidden', shadowColor: '#f59e0b', shadowOffset: {width:0, height:8}, shadowOpacity:0.4, shadowRadius:15, elevation:8 },
-  yellowTitle: { fontSize: 16, fontWeight: '900', color: '#fff', textAlign: 'center', lineHeight: 22, textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: {width:0, height:2}, textShadowRadius: 4 },
-  yellowBadgeWrapper: { position: 'absolute', bottom: 20, left: 15, zIndex: 10 },
-  yellowBadge: { width: 54, height: 54, borderRadius: 27, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff', shadowColor: '#000', shadowOffset: {width:0, height:4}, shadowOpacity:0.3, shadowRadius:5 },
-  yellowBadgeText: { color: '#fff', fontSize: 11, fontWeight: '900', textAlign: 'center', lineHeight: 14 },
-  yellowImg: { position: 'absolute', bottom: -15, right: -15, width: 100, height: 100, resizeMode: 'cover' },
+  yellowCard: { backgroundColor: '#ffdd00', width: 130, height: 170, borderRadius: 24, marginRight: 15, overflow: 'hidden', shadowColor: '#f59e0b', shadowOffset: {width:0, height:6}, shadowOpacity:0.3, shadowRadius:10, elevation:6 },
+  yellowTextContainer: { padding: 12, paddingBottom: 0, zIndex: 10 },
+  yellowTitle: { fontSize: 14, fontWeight: '900', color: '#111827', textAlign: 'center', lineHeight: 18 },
+  yellowBadgeWrapper: { position: 'absolute', bottom: 15, left: 10, zIndex: 15 },
+  yellowBadge: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff', shadowColor: '#000', shadowOffset: {width:0, height:4}, shadowOpacity:0.3, shadowRadius:5 },
+  yellowBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', textAlign: 'center', lineHeight: 12 },
+  yellowImg: { position: 'absolute', bottom: 0, left: 0, right: 0, width: '100%', height: 105, resizeMode: 'cover' },
 
   // CATEGORIES
   sectionContainer: { paddingHorizontal: 20, marginTop: 35 },
