@@ -71,12 +71,36 @@ export default function HomeScreen() {
   const splashLogoRotate = useRef(new Animated.Value(0)).current;
   const listFadeAnim = useRef(new Animated.Value(0)).current;
   
+  // Hero Banner Floating & Shine Animations
+  const floatAnim1 = useRef(new Animated.Value(0)).current;
+  const floatAnim2 = useRef(new Animated.Value(0)).current;
+  const shineAnim = useRef(new Animated.Value(-100)).current;
+
   // Typewriter effect states
   const [placeholderText, setPlaceholderText] = useState("Search for 'Biryani'");
   const placeholderIndex = useRef(0);
   const charIndex = useRef(0);
 
   useEffect(() => {
+    // Start Floating and Shine Animations
+    Animated.loop(
+        Animated.sequence([
+            Animated.timing(floatAnim1, { toValue: -10, duration: 1500, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+            Animated.timing(floatAnim1, { toValue: 0, duration: 1500, useNativeDriver: true, easing: Easing.inOut(Easing.ease) })
+        ])
+    ).start();
+
+    Animated.loop(
+        Animated.sequence([
+            Animated.timing(floatAnim2, { toValue: 12, duration: 1800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) }),
+            Animated.timing(floatAnim2, { toValue: 0, duration: 1800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) })
+        ])
+    ).start();
+
+    Animated.loop(
+        Animated.timing(shineAnim, { toValue: width, duration: 2500, useNativeDriver: true, delay: 1000 })
+    ).start();
+    
     // Typewriter effect
     let typingInterval: NodeJS.Timeout;
     let termInterval = setInterval(() => {
@@ -311,12 +335,13 @@ export default function HomeScreen() {
               <View style={styles.contentBackground}>
                   {/* HERO BANNER SECTION */}
                   <View style={styles.heroBlueBanner}>
-                      <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={styles.floatingBurger} />
-                      <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png'}} style={styles.floatingPizza} />
+                      <Animated.Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={[styles.floatingBurger, { transform: [{ translateY: floatAnim1 }, { rotate: '-15deg' }] }]} />
+                      <Animated.Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3595/3595458.png'}} style={[styles.floatingPizza, { transform: [{ translateY: floatAnim2 }, { rotate: '15deg' }] }]} />
                       
                       <View style={styles.heroTextCenter}>
                           <Text style={styles.heroText70}>60% OFF</Text>
                           <Text style={styles.heroTextUpTo}>UP TO ₹120 ON TOP BRANDS</Text>
+                          <Animated.View style={[styles.shineEffect, { transform: [{ translateX: shineAnim }] }]} />
                       </View>
 
                       <FlatList 
@@ -454,12 +479,13 @@ const styles = StyleSheet.create({
   tabActiveLine: { position: 'absolute', bottom: 0, left: 14, right: 14, height: 4, backgroundColor: '#f59e0b', borderRadius: 2 },
 
   // HERO SECTION
-  heroBlueBanner: { backgroundColor: '#0f172a', paddingTop: 35, paddingBottom: 25, overflow: 'hidden', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, shadowColor: '#000', shadowOffset: {width: 0, height: 10}, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
-  floatingBurger: { position: 'absolute', top: 20, left: -20, width: 100, height: 100, transform: [{rotate: '-20deg'}], opacity: 0.9 },
-  floatingPizza: { position: 'absolute', top: 10, right: -20, width: 110, height: 110, transform: [{rotate: '15deg'}], opacity: 0.9 },
-  heroTextCenter: { alignItems: 'center', zIndex: 5 },
-  heroText70: { color: '#fff', fontSize: 50, fontWeight: '900', letterSpacing: -2, textShadowColor: '#f59e0b', textShadowOffset: {width: 2, height: 4}, textShadowRadius: 10 },
-  heroTextUpTo: { color: '#fcd34d', fontSize: 16, fontWeight: '900', letterSpacing: 3, marginTop: 5 },
+  heroBlueBanner: { backgroundColor: '#0f172a', paddingTop: 35, paddingBottom: 25, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, shadowColor: '#000', shadowOffset: {width: 0, height: 10}, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  floatingBurger: { position: 'absolute', top: 25, left: 0, width: 85, height: 85, opacity: 0.9, resizeMode: 'contain' },
+  floatingPizza: { position: 'absolute', top: 15, right: 0, width: 95, height: 95, opacity: 0.9, resizeMode: 'contain' },
+  heroTextCenter: { alignItems: 'center', zIndex: 5, overflow: 'hidden', paddingHorizontal: 40 },
+  heroText70: { color: '#fff', fontSize: 42, fontWeight: '900', letterSpacing: -1, textShadowColor: '#f59e0b', textShadowOffset: {width: 2, height: 4}, textShadowRadius: 10 },
+  heroTextUpTo: { color: '#fcd34d', fontSize: 13, fontWeight: '900', letterSpacing: 2, marginTop: 5, textAlign: 'center' },
+  shineEffect: { position: 'absolute', top: -20, left: 0, width: 40, height: 150, backgroundColor: 'rgba(255,255,255,0.4)', transform: [{rotate: '20deg'}], zIndex: 10 },
   
   yellowCard: { backgroundColor: '#f59e0b', width: 140, height: 180, borderRadius: 24, marginRight: 16, padding: 15, overflow: 'hidden', shadowColor: '#f59e0b', shadowOffset: {width:0, height:8}, shadowOpacity:0.4, shadowRadius:15, elevation:8 },
   yellowTitle: { fontSize: 16, fontWeight: '900', color: '#fff', textAlign: 'center', lineHeight: 22, textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: {width:0, height:2}, textShadowRadius: 4 },
