@@ -103,8 +103,9 @@ export default function HomeScreen() {
         </View>
         <View style={styles.headerRight}>
           <Link href="/help"><Text style={styles.iconButton}>🎧</Text></Link>
+          <Link href="/cart"><Text style={styles.iconButton}>🛒</Text></Link>
           {isAuthenticated ? (
-            <TouchableOpacity onPress={handleLogout}>
+            <TouchableOpacity onPress={() => router.push('/profile')}>
                <Image source={{uri: 'https://i.pravatar.cc/100?img=33'}} style={styles.avatar} />
             </TouchableOpacity>
           ) : (

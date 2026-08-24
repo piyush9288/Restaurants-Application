@@ -66,7 +66,7 @@ export default function RestaurantMenuScreen() {
         <View style={{width: 30}} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 80}}>
         <View style={styles.heroContainer}>
            <Image source={{uri: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&q=80'}} style={styles.heroImage} />
            <View style={styles.heroOverlay}>
@@ -96,7 +96,17 @@ export default function RestaurantMenuScreen() {
         </View>
       </ScrollView>
 
-      {/* Floating View Cart Button could go here */}
+      {/* Floating View Cart Button */}
+      {cart.length > 0 && (
+        <View style={styles.floatingCartContainer}>
+          <TouchableOpacity style={styles.floatingCartBtn} onPress={() => router.push('/cart')}>
+            <View>
+              <Text style={styles.floatingCartText}>{cart.length} ITEM{cart.length > 1 ? 'S' : ''}</Text>
+              <Text style={styles.floatingCartSubText}>View Cart ➔</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -132,5 +142,10 @@ const styles = StyleSheet.create({
   addButtonText: { color: '#60b246', fontWeight: '900', fontSize: 16 },
   
   separator: { height: 1, backgroundColor: '#e9e9eb', marginVertical: 10 },
-  emptyText: { textAlign: 'center', color: '#686b78', marginTop: 20 }
+  emptyText: { textAlign: 'center', color: '#686b78', marginTop: 20 },
+  
+  floatingCartContainer: { position: 'absolute', bottom: 20, left: 15, right: 15 },
+  floatingCartBtn: { backgroundColor: '#60b246', borderRadius: 8, padding: 15, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 5, elevation: 5 },
+  floatingCartText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  floatingCartSubText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });

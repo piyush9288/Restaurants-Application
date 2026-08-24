@@ -9,6 +9,7 @@ class CustomerProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"), unique=True)
     name = Column(String, nullable=False)
     phone = Column(String, nullable=True)
+    address = Column(String, nullable=True)
 
 class RestaurantProfile(Base):
     __tablename__ = "restaurants"
