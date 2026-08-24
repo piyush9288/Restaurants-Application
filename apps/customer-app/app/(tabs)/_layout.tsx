@@ -62,7 +62,7 @@ export default function TabLayout() {
           title: 'Cart',
           tabBarIcon: ({ color }) => (
             <View>
-                <SymbolView name={{ ios: 'bag.fill', android: 'shopping_bag', web: 'shopping_bag' }} tintColor={color} size={26} />
+                <SymbolView name={{ ios: 'takeoutbag.and.cup.and.straw.fill', android: 'takeout_dining', web: 'takeout_dining' }} tintColor={color} size={26} />
                 {cartItemCount > 0 && (
                     <View style={styles.badge}>
                         <Text style={styles.badgeText}>{cartItemCount}</Text>
