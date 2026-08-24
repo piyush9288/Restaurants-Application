@@ -1,8 +1,6 @@
-import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Platform, View, Text, StyleSheet } from 'react-native';
-
-import Colors from '@/constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useCart } from '../CartContext';
@@ -44,7 +42,7 @@ export default function TabLayout() {
           title: 'Home',
           headerShown: false,
           tabBarIcon: ({ color }) => (
-             <Text style={{fontSize: 22, color}}>🏠</Text>
+             <Ionicons name="home" size={24} color={color} />
           ),
         }}
       />
@@ -53,7 +51,7 @@ export default function TabLayout() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color }) => (
-            <Text style={{fontSize: 22, color}}>📋</Text>
+            <Ionicons name="receipt" size={24} color={color} />
           ),
         }}
       />
@@ -64,7 +62,7 @@ export default function TabLayout() {
           href: '/cart',
           tabBarIcon: ({ color }) => (
             <View>
-                <Text style={{fontSize: 22, color}}>🛒</Text>
+                <Ionicons name="cart" size={26} color={color} />
                 {cartItemCount > 0 && (
                     <View style={styles.badge}>
                         <Text style={styles.badgeText}>{cartItemCount}</Text>
@@ -80,7 +78,7 @@ export default function TabLayout() {
           title: 'Help',
           href: '/help',
           tabBarIcon: ({ color }) => (
-            <Text style={{fontSize: 22, color}}>🎧</Text>
+            <Ionicons name="headset" size={24} color={color} />
           ),
         }}
       />
