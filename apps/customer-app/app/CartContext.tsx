@@ -29,8 +29,20 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setRestaurantId(null);
   };
 
+  const removeFromCart = (itemId: number) => {
+    setCart((prev) => {
+      const updated = prev.filter((i) => i.id !== itemId);
+      if (updated.length === 0) setRestaurantId(null);
+      return updated;
+    });
+  };
+
+  const getCartTotal = () => {
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
   return (
-    <CartContext.Provider value={{ cart, addToCart, clearCart, restaurantId }}>
+    <CartContext.Provider value={{ cart, addToCart, clearCart, removeFromCart, getCartTotal, restaurantId }}>
       {children}
     </CartContext.Provider>
   );

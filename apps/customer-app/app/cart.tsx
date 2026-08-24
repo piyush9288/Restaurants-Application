@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
 
 export default function CartScreen() {
-  const { cart, removeFromCart, clearCart, getCartTotal } = useCart();
+  const { cart, removeFromCart, clearCart, getCartTotal, restaurantId } = useCart();
   const router = useRouter();
 
   const handleCheckout = async () => {
@@ -22,7 +22,7 @@ export default function CartScreen() {
 
     try {
       const orderPayload = {
-        restaurant_id: cart[0].restaurantId,
+        restaurant_id: Number(restaurantId),
         items: cart.map(item => ({
           menu_item_id: item.id,
           quantity: item.quantity
