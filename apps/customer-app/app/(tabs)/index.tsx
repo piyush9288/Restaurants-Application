@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Image, TextInput, SafeAreaView, Platform, Animated, Dimensions, Switch, Easing } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, ScrollView, Image, TextInput, SafeAreaView, Platform, Animated, Dimensions, Switch, Easing, LayoutAnimation, UIManager } from 'react-native';
 import { router } from 'expo-router';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,7 +31,7 @@ const SEARCH_TERMS = ['Biryani', 'Pizza', 'Sweets', 'EatRight', 'Burger'];
 // Premium Animated Pressable Component
 const PremiumButton = ({ children, onPress, style, activeOpacity = 0.9 }: any) => {
     const scale = useRef(new Animated.Value(1)).current;
-    const handlePressIn = () => Animated.spring(scale, { toValue: 0.92, useNativeDriver: true }).start();
+    const handlePressIn = () => Animated.spring(scale, { toValue: 0.94, useNativeDriver: true }).start();
     const handlePressOut = () => Animated.spring(scale, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true }).start();
     return (
         <Animated.View style={[{ transform: [{ scale }] }]}>
@@ -47,7 +51,7 @@ const SkeletonLoader = ({ width, height, style, borderRadius = 12 }: any) => {
             Animated.timing(shimmerAnim, { toValue: 0.2, duration: 800, useNativeDriver: true, easing: Easing.inOut(Easing.ease) })
         ])).start();
     }, []);
-    return <Animated.View style={[{ width, height, backgroundColor: '#334155', borderRadius, opacity: shimmerAnim }, style]} />;
+    return <Animated.View style={[{ width, height, backgroundColor: '#1e293b', borderRadius, opacity: shimmerAnim }, style]} />;
 };
 
 export default function HomeScreen() {
@@ -64,6 +68,11 @@ export default function HomeScreen() {
   
   const [activeTab, setActiveTab] = useState('ALL');
   const TABS = ['ALL', 'STORE', 'OFFERS', 'FOOD ON TRAIN', 'EATRIGHT'];
+
+  const handleTabPress = (tab: string) => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setActiveTab(tab);
+  };
 
   // Advanced Splash & Scroll Animations
   const splashOpacity = useRef(new Animated.Value(1)).current;
@@ -259,9 +268,9 @@ export default function HomeScreen() {
                       <SkeletonLoader width={200} height={20} style={{marginBottom: 10}} />
                       <SkeletonLoader width={300} height={14} style={{marginBottom: 20}} />
                       <View style={{flexDirection: 'row', gap: 15, marginTop: 10}}>
-                          <SkeletonLoader width={'30%'} height={80} borderRadius={20} />
-                          <SkeletonLoader width={'30%'} height={80} borderRadius={20} />
-                          <SkeletonLoader width={'30%'} height={80} borderRadius={20} />
+                          <SkeletonLoader width={'30%'} height={110} borderRadius={24} />
+                          <SkeletonLoader width={'30%'} height={110} borderRadius={24} />
+                          <SkeletonLoader width={'30%'} height={110} borderRadius={24} />
                       </View>
                   </View>
               ) : (
@@ -278,19 +287,25 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                     </View>
 
-                    <View style={styles.serviceToggles}>
-                        <PremiumButton style={[styles.serviceBtn, styles.serviceBtnActive]}>
-                            <Text style={{fontSize: 26, marginBottom: 5}}>🍔</Text>
-                            <Text style={styles.serviceTextActive}>Food</Text>
+                    {/* ULTRA PREMIUM SERVICE TOGGLES (BENTO STYLE) */}
+                    <View style={styles.bentoContainer}>
+                        <PremiumButton style={[styles.bentoCard, {backgroundColor: '#f97316'}]} onPress={() => {}}>
+                            <Text style={styles.bentoTitle}>Food</Text>
+                            <Text style={styles.bentoSub}>Order now</Text>
+                            <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png'}} style={styles.bentoImg} />
                         </PremiumButton>
-                        <PremiumButton style={styles.serviceBtn}>
-                            <View style={styles.timeBadge}><Text style={styles.timeBadgeText}>15 mins</Text></View>
-                            <Text style={{fontSize: 26, marginBottom: 5}}>🛍️</Text>
-                            <Text style={styles.serviceText}>Mart</Text>
+                        
+                        <PremiumButton style={[styles.bentoCard, {backgroundColor: '#8b5cf6'}]} onPress={() => router.push('/mart')}>
+                            <View style={styles.bentoTimeBadge}><Text style={styles.bentoTimeText}>10 MINS</Text></View>
+                            <Text style={styles.bentoTitle}>Mart</Text>
+                            <Text style={styles.bentoSub}>Groceries</Text>
+                            <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/3753/3753696.png'}} style={styles.bentoImg} />
                         </PremiumButton>
-                        <PremiumButton style={styles.serviceBtn}>
-                            <Text style={{fontSize: 26, marginBottom: 5}}>🍷</Text>
-                            <Text style={styles.serviceText}>Dine</Text>
+                        
+                        <PremiumButton style={[styles.bentoCard, {backgroundColor: '#ec4899'}]} onPress={() => router.push('/dine')}>
+                            <Text style={styles.bentoTitle}>Dine</Text>
+                            <Text style={styles.bentoSub}>50% OFF</Text>
+                            <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/2819/2819194.png'}} style={styles.bentoImg} />
                         </PremiumButton>
                     </View>
                   </View>
@@ -323,11 +338,19 @@ export default function HomeScreen() {
                   </TouchableOpacity>
               </View>
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
-                  {TABS.map((tab) => (
-                      <TouchableOpacity key={tab} style={[styles.tabBtn]} onPress={() => setActiveTab(tab)}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll} contentContainerStyle={{position: 'relative'}}>
+                  {TABS.map((tab, idx) => (
+                      <TouchableOpacity 
+                        key={tab} 
+                        style={styles.tabBtn} 
+                        onLayout={(e) => {
+                            // Store tab layouts to calculate sliding positions
+                            // This is a simplified approach; in a full app we'd store exact x-coordinates
+                        }}
+                        onPress={() => handleTabPress(tab)}
+                      >
                           <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-                          {activeTab === tab && <View style={styles.tabActiveLine} />}
+                          {activeTab === tab && <Animated.View style={styles.tabActiveLine} />}
                       </TouchableOpacity>
                   ))}
               </ScrollView>
@@ -467,13 +490,13 @@ const styles = StyleSheet.create({
   profileIconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1e293b', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#334155', overflow: 'hidden' },
   profileIcon: { width: '100%', height: '100%', resizeMode: 'cover' },
   
-  serviceToggles: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#0f172a', borderRadius: 24, padding: 8, borderWidth: 1, borderColor: '#1e293b' },
-  serviceBtn: { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 20 },
-  serviceBtnActive: { backgroundColor: '#1e293b', shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 10, elevation: 5 },
-  serviceText: { color: '#64748b', fontSize: 13, fontWeight: '800', letterSpacing: 0.5 },
-  serviceTextActive: { color: '#fff', fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
-  timeBadge: { position: 'absolute', top: -8, backgroundColor: '#ef4444', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, zIndex: 10, shadowColor: '#ef4444', shadowOffset: {width:0, height:4}, shadowOpacity:0.4, shadowRadius:6 },
-  timeBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900' },
+  bentoContainer: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  bentoCard: { flex: 1, height: 110, borderRadius: 24, padding: 12, overflow: 'hidden', position: 'relative', shadowColor: '#000', shadowOffset: {width: 0, height: 6}, shadowOpacity: 0.2, shadowRadius: 10, elevation: 6 },
+  bentoTitle: { color: '#fff', fontSize: 18, fontWeight: '900', zIndex: 2 },
+  bentoSub: { color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '700', zIndex: 2, marginTop: 2 },
+  bentoImg: { position: 'absolute', bottom: -15, right: -15, width: 80, height: 80, resizeMode: 'contain', opacity: 0.9, transform: [{rotate: '-10deg'}] },
+  bentoTimeBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#0f172a', paddingHorizontal: 6, paddingVertical: 4, borderRadius: 8, zIndex: 3 },
+  bentoTimeText: { color: '#fff', fontSize: 9, fontWeight: '900' },
 
   // STICKY SEARCH (Glassmorphic feel)
   stickySearchSection: { backgroundColor: '#020617', borderBottomLeftRadius: 24, borderBottomRightRadius: 24, zIndex: 100, paddingBottom: 10, shadowColor: '#000', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.4, shadowRadius: 15, elevation: 10 },
