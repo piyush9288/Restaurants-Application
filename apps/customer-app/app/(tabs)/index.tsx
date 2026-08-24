@@ -15,6 +15,8 @@ const CATEGORIES = [
 
 export default function HomeScreen() {
   const [restaurants, setRestaurants] = useState([]);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
@@ -43,12 +45,21 @@ export default function HomeScreen() {
     }
   };
 
+  const filteredRestaurants = restaurants.filter((r: any) => {
+    const matchesSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase());
+    if (activeCategory && activeCategory !== 'Offers') {
+      // Very basic mock filtering based on name or description matching category
+      const matchesCategory = r.description.toLowerCase().includes(activeCategory.toLowerCase()) || r.name.toLowerCase().includes(activeCategory.toLowerCase());
+      return matchesSearch && matchesCategory;
+    }
+    return matchesSearch;
+  });
+
   const renderRestaurant = ({ item, index }: { item: any, index: number }) => {
-    // Generate a consistent dummy image and rating based on index
     const images = [
-      'https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80', // Burger
-      'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80', // Pizza
-      'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80'  // Sushi
+      'https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80',
+      'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=80',
+      'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=500&q=80'
     ];
     const imgUrl = images[index % images.length];
     const rating = (4 + (index % 10) * 0.1).toFixed(1);
@@ -113,6 +124,8 @@ export default function HomeScreen() {
             style={styles.searchInput} 
             placeholder="Restaurant name or dish..." 
             placeholderTextColor="#888"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
         </View>
 
@@ -120,14 +133,21 @@ export default function HomeScreen() {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Eat what makes you happy</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-            {CATEGORIES.map(cat => (
-              <View key={cat.id} style={styles.categoryItem}>
-                <View style={styles.categoryIconCircle}>
-                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                </View>
-                <Text style={styles.categoryName}>{cat.name}</Text>
-              </View>
-            ))}
+            {CATEGORIES.map(cat => {
+              const isActive = activeCategory === cat.name;
+              return (
+                <TouchableOpacity 
+                  key={cat.id} 
+                  style={styles.categoryItem}
+                  onPress={() => setActiveCategory(isActive ? null : cat.name)}
+                >
+                  <View style={[styles.categoryIconCircle, isActive && { borderColor: '#fc8019', borderWidth: 2 }]}>
+                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                  </View>
+                  <Text style={[styles.categoryName, isActive && { color: '#fc8019', fontWeight: 'bold' }]}>{cat.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
@@ -135,16 +155,18 @@ export default function HomeScreen() {
 
         {/* Restaurant List */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Top restaurants near you</Text>
+          <Text style={styles.sectionTitle}>
+            {activeCategory ? `Top ${activeCategory} places` : 'Top restaurants near you'}
+          </Text>
           
           {loading ? (
             <ActivityIndicator size="large" color="#fc8019" style={{marginTop: 40}} />
           ) : (
             <FlatList
-              data={restaurants}
-              keyExtractor={(item) => item.id.toString()}
+              data={filteredRestaurants}
+              keyExtractor={(item: any) => item.id.toString()}
               renderItem={renderRestaurant}
-              scrollEnabled={false} // Since it's inside a ScrollView
+              scrollEnabled={false}
               ListEmptyComponent={<Text style={{textAlign: 'center', marginTop: 20}}>No restaurants found.</Text>}
             />
           )}
