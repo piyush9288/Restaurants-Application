@@ -165,21 +165,10 @@ export default function HomeScreen() {
               <Text style={styles.locationValue} numberOfLines={1}>
                 {userProfile?.pincode ? `${userProfile.address.split(',')[0]}, ${userProfile.pincode}` : 'Home, New Delhi, India'}
               </Text>
-              <Text style={styles.chevron}>⌄</Text>
           </View>
         </View>
         
         <View style={styles.headerRight}>
-          <Link href="/help" asChild>
-              <TouchableOpacity style={styles.iconCircle}>
-                  <Text style={styles.iconText}>🎧</Text>
-              </TouchableOpacity>
-          </Link>
-          <Link href="/cart" asChild>
-              <TouchableOpacity style={styles.iconCircle}>
-                  <Text style={styles.iconText}>🛒</Text>
-              </TouchableOpacity>
-          </Link>
           {isAuthenticated ? (
             <TouchableOpacity onPress={() => router.push('/profile')} style={styles.avatarWrapper}>
                <Image source={{uri: 'https://i.pravatar.cc/100?img=33'}} style={styles.avatar} />
@@ -193,7 +182,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 40}}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{paddingBottom: 90}}>
         
         {/* Search Bar */}
         <View style={styles.searchContainer}>
