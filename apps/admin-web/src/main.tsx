@@ -79,7 +79,7 @@ const DashboardStats = ({ orders }: { orders: any[] }) => {
 };
 
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout: () => void }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [data, setData] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -161,13 +161,14 @@ const AdminDashboard = () => {
           ))}
         </ul>
         <div style={{ padding: '20px', borderTop: '1px solid #e5e7eb' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '35px', height: '35px', borderRadius: '50%', backgroundColor: '#fc8019', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white', fontWeight: 'bold' }}>A</div>
-                <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                <div style={{ width: '35px', height: '35px', borderRadius: '50%', backgroundColor: '#fc8019', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'white', fontWeight: 'bold' }}>{adminEmail.charAt(0).toUpperCase()}</div>
+                <div style={{ overflow: 'hidden' }}>
                     <h4 style={{ margin: 0, fontSize: '14px', color: '#111827' }}>Admin User</h4>
-                    <span style={{ fontSize: '12px', color: '#6b7280' }}>admin@system.com</span>
+                    <span style={{ fontSize: '12px', color: '#6b7280', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }}>{adminEmail}</span>
                 </div>
             </div>
+            <button onClick={onLogout} style={{ width: '100%', padding: '8px', backgroundColor: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Logout</button>
         </div>
       </div>
       
@@ -281,8 +282,110 @@ const AdminDashboard = () => {
   );
 };
 
+const Login = ({ onLoginSuccess }: { onLoginSuccess: (email: string) => void }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append('username', email);
+      formData.append('password', password);
+
+      const res = await fetch(`${API_URL}/api/auth/login/access-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        // Now check if this is an ADMIN
+        const profileRes = await fetch(`${API_URL}/api/users/me/profile`, {
+            headers: { 'Authorization': `Bearer ${data.access_token}` }
+        });
+        const profileData = await profileRes.json();
+        
+        if (profileData.role === 'ADMIN') {
+            localStorage.setItem('admin_token', data.access_token);
+            localStorage.setItem('admin_email', profileData.email);
+            onLoginSuccess(profileData.email);
+        } else {
+            setError('Access Denied: You are not an Administrator.');
+        }
+      } else {
+        setError(data.detail || 'Login failed');
+      }
+    } catch (err) {
+      setError('Network error');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f3f4f6', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', width: '100%', maxWidth: '400px' }}>
+        <h2 style={{ textAlign: 'center', color: '#fc8019', margin: '0 0 10px 0', fontSize: '28px' }}>FoodAdmin</h2>
+        <p style={{ textAlign: 'center', color: '#6b7280', margin: '0 0 30px 0' }}>Sign in to the Control Panel</p>
+        
+        {error && <div style={{ backgroundColor: '#fee2e2', color: '#ef4444', padding: '10px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center', fontSize: '14px' }}>{error}</div>}
+        
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontSize: '14px', fontWeight: '500' }}>Email Address</label>
+            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} style={{ width: '100%', padding: '10px 15px', borderRadius: '8px', border: '1px solid #d1d5db', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#374151', fontSize: '14px', fontWeight: '500' }}>Password</label>
+            <input type="password" required value={password} onChange={e => setPassword(e.target.value)} style={{ width: '100%', padding: '10px 15px', borderRadius: '8px', border: '1px solid #d1d5db', boxSizing: 'border-box' }} />
+          </div>
+          <button type="submit" disabled={loading} style={{ backgroundColor: '#fc8019', color: 'white', padding: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '10px' }}>
+            {loading ? 'Authenticating...' : 'Secure Login'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    const email = localStorage.getItem('admin_email');
+    if (token && email) {
+      setIsAuthenticated(true);
+      setAdminEmail(email);
+    }
+    setChecking(false);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_email');
+    setIsAuthenticated(false);
+  };
+
+  if (checking) return null;
+
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={(email) => { setAdminEmail(email); setIsAuthenticated(true); }} />;
+  }
+
+  return <AdminDashboard adminEmail={adminEmail} onLogout={handleLogout} />;
+};
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AdminDashboard />
+    <App />
   </React.StrictMode>
 );
