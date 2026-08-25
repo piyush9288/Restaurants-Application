@@ -112,7 +112,8 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
         return;
     }
 
-    fetch(`${API_URL}/api/${activeTab}/`)
+    const url = activeTab === 'restaurants' ? `${API_URL}/api/${activeTab}/?all=true` : `${API_URL}/api/${activeTab}/`;
+    fetch(url)
       .then(res => res.json())
       .then(resData => {
         if (Array.isArray(resData)) setData(resData);
@@ -196,18 +197,40 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
                     <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Restaurant</th>
                     <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Description</th>
                     <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Address/Pincode</th>
+                    <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Status</th>
+                    <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.map((item: any) => (
                     <tr key={item.id} style={{borderTop: '1px solid #f3f4f6'}}>
                       <td style={{padding: '15px 20px', color: '#6b7280'}}>#{item.id}</td>
-                      <td style={{padding: '15px 20px', fontWeight: '600', color: '#111827'}}>{item.name}</td>
+                      <td style={{padding: '15px 20px', fontWeight: '600', color: '#111827'}}>
+                        {item.name} <br/> <span style={{fontSize: '10px', color: 'gray'}}>{item.type}</span>
+                      </td>
                       <td style={{padding: '15px 20px', color: '#4b5563'}}>{item.description}</td>
                       <td style={{padding: '15px 20px', color: '#4b5563'}}>{item.address} {item.pincode ? `(${item.pincode})` : ''}</td>
+                      <td style={{padding: '15px 20px'}}>
+                        <span style={{backgroundColor: item.is_verified ? '#d1fae5' : '#fef3c7', color: item.is_verified ? '#065f46' : '#92400e', padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold'}}>
+                            {item.is_verified ? 'Verified' : 'Pending'}
+                        </span>
+                      </td>
+                      <td style={{padding: '15px 20px'}}>
+                        {!item.is_verified && (
+                            <button 
+                                onClick={() => {
+                                    fetch(`${API_URL}/api/restaurants/${item.id}/verify`, { method: 'PUT' })
+                                        .then(() => fetchData());
+                                }}
+                                style={{backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'}}
+                            >
+                                Verify Now
+                            </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
-                  {data.length === 0 && <tr><td colSpan={4} style={{padding: '30px', textAlign: 'center'}}>No restaurants found</td></tr>}
+                  {data.length === 0 && <tr><td colSpan={6} style={{padding: '30px', textAlign: 'center'}}>No restaurants found</td></tr>}
                 </tbody>
               </table>
             )}

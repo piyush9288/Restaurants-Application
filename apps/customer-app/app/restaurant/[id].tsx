@@ -70,7 +70,17 @@ export default function RestaurantMenuScreen() {
     fetch(`${API_URL}/api/restaurants/${id}/menu`)
       .then(res => res.json())
       .then(data => {
-        setMenu(Array.isArray(data) ? data : []);
+        if (Array.isArray(data)) {
+            // Add ₹10 markup (Platform fee + GST) to the base price before displaying to customer
+            const markedUpMenu = data.map(item => ({
+                ...item,
+                originalPrice: item.price,
+                price: item.price + 10 
+            }));
+            setMenu(markedUpMenu);
+        } else {
+            setMenu([]);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -175,6 +185,7 @@ export default function RestaurantMenuScreen() {
 
             <View style={styles.menuSection}>
                 <Text style={styles.sectionTitle}>Recommended</Text>
+                <Text style={{fontSize: 12, color: '#94a3b8', marginBottom: 15, fontStyle: 'italic'}}>Note: Menu prices include a ₹10 Platform & GST markup.</Text>
                 {loading ? (
                     <ActivityIndicator size="large" color="#fc8019" style={{marginTop: 50}} />
                 ) : (
