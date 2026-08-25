@@ -42,6 +42,34 @@ def update_my_restaurant(
     db.refresh(restaurant)
     return restaurant
 
+from pydantic import BaseModel
+class WithdrawRequest(BaseModel):
+    amount: float
+
+@router.post("/withdraw")
+def withdraw_earnings(
+    request: WithdrawRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != UserRole.RESTAURANT:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    restaurant = db.query(RestaurantProfile).filter(RestaurantProfile.user_id == current_user.id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Profile not found")
+        
+    available = restaurant.total_earnings - restaurant.withdrawn_amount
+    if request.amount > available or request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid withdrawal amount")
+        
+    if not restaurant.upi_id:
+        raise HTTPException(status_code=400, detail="Please set UPI ID in profile first")
+        
+    restaurant.withdrawn_amount += request.amount
+    db.commit()
+    return {"message": "Withdrawal successful", "withdrawn_amount": restaurant.withdrawn_amount}
+
 @router.get("/", response_model=List[RestaurantProfileResponse])
 def get_restaurants(all: bool = False, db: Session = Depends(get_db)):
     if all:

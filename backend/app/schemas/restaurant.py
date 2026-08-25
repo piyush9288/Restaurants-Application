@@ -9,6 +9,7 @@ class RestaurantProfileBase(BaseModel):
     phone: Optional[str] = None
     type: str = "FOOD"
     photo_url: Optional[str] = None
+    upi_id: Optional[str] = None
 
 class RestaurantProfileCreate(RestaurantProfileBase):
     pass
@@ -21,6 +22,7 @@ class RestaurantProfileResponse(RestaurantProfileBase):
     user_id: int
     is_verified: bool
     total_earnings: int
+    withdrawn_amount: int
 
     class Config:
         from_attributes = True

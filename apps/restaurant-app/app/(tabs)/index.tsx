@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image, TextInput } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, Image, TextInput, Alert, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
@@ -15,7 +16,19 @@ export default function RestaurantDashboard() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
+  const [newItemImage, setNewItemImage] = useState<string | null>(null);
   const [addingItem, setAddingItem] = useState(false);
+
+  // Withdraw State
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  // Profile Edit State
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editUpi, setEditUpi] = useState('');
+  const [editPhoto, setEditPhoto] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const router = useRouter();
 
@@ -33,7 +46,14 @@ export default function RestaurantDashboard() {
         const p = await profileRes.json();
         setProfile(p);
         
-        // Fetch Menu
+        // Populate edit state if empty
+        if (!editName && p.name) {
+            setEditName(p.name);
+            setEditDesc(p.description || '');
+            setEditUpi(p.upi_id || '');
+            setEditPhoto(p.photo_url || null);
+        }
+        
         if (p.id) {
             const menuRes = await fetch(`${API_URL}/api/restaurants/${p.id}/menu`);
             if (menuRes.ok) {
@@ -75,8 +95,21 @@ export default function RestaurantDashboard() {
     }).then(() => fetchData());
   };
   
+  const pickImage = async (setter: any) => {
+      let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.5,
+      });
+      if (!result.canceled) setter(result.assets[0].uri);
+  };
+
   const handleAddItem = async () => {
-      if (!newItemName || !newItemPrice) return;
+      if (!newItemName || !newItemPrice) {
+          Alert.alert("Missing Details", "Please enter a name and price.");
+          return;
+      }
       setAddingItem(true);
       try {
           const res = await fetch(`${API_URL}/api/restaurants/menu`, {
@@ -89,6 +122,7 @@ export default function RestaurantDashboard() {
                   name: newItemName,
                   description: newItemDesc,
                   price: parseFloat(newItemPrice),
+                  image_url: newItemImage,
                   is_available: true
               })
           });
@@ -96,12 +130,75 @@ export default function RestaurantDashboard() {
               setNewItemName('');
               setNewItemDesc('');
               setNewItemPrice('');
+              setNewItemImage(null);
               fetchData();
+              if(Platform.OS === 'web') alert("Item Added");
           }
       } catch(e) {
           console.error(e);
       } finally {
           setAddingItem(false);
+      }
+  };
+
+  const handleWithdraw = async () => {
+      if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+          Alert.alert("Invalid Amount", "Please enter a valid amount.");
+          return;
+      }
+      setWithdrawing(true);
+      try {
+          const res = await fetch(`${API_URL}/api/restaurants/withdraw`, {
+              method: 'POST',
+              headers: { 
+                  'Authorization': `Bearer ${getToken()}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ amount: parseFloat(withdrawAmount) })
+          });
+          if (res.ok) {
+              setWithdrawAmount('');
+              fetchData();
+              if(Platform.OS === 'web') alert("Withdrawal Successful to UPI!");
+              else Alert.alert("Success", "Money withdrawn to your UPI.");
+          } else {
+              const data = await res.json();
+              if(Platform.OS === 'web') alert(data.detail);
+              else Alert.alert("Error", data.detail);
+          }
+      } catch(e) {
+          console.error(e);
+      } finally {
+          setWithdrawing(false);
+      }
+  };
+
+  const handleSaveProfile = async () => {
+      setSavingProfile(true);
+      try {
+          const res = await fetch(`${API_URL}/api/restaurants/me`, {
+              method: 'POST',
+              headers: { 
+                  'Authorization': `Bearer ${getToken()}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  name: editName,
+                  description: editDesc,
+                  upi_id: editUpi,
+                  photo_url: editPhoto,
+                  type: profile?.type || 'FOOD'
+              })
+          });
+          if (res.ok) {
+              fetchData();
+              if(Platform.OS === 'web') alert("Profile Updated!");
+              else Alert.alert("Success", "Profile updated!");
+          }
+      } catch(e) {
+          console.error(e);
+      } finally {
+          setSavingProfile(false);
       }
   };
 
@@ -113,7 +210,7 @@ export default function RestaurantDashboard() {
   const activeOrders = orders.filter(o => o.status !== 'DELIVERED' && o.status !== 'CANCELLED');
   const pastOrders = orders.filter(o => o.status === 'DELIVERED');
 
-  const todaysEarnings = pastOrders.reduce((sum, o) => sum + o.total_amount, 0);
+  const availableBalance = (profile?.total_earnings || 0) - (profile?.withdrawn_amount || 0);
 
   return (
     <View style={styles.container}>
@@ -156,13 +253,19 @@ export default function RestaurantDashboard() {
                 style={[styles.tab, activeTab === 'MENU' && styles.tabActive]}
                 onPress={() => setActiveTab('MENU')}
               >
-                <Text style={[styles.tabText, activeTab === 'MENU' && styles.tabTextActive]}>Menu Items</Text>
+                <Text style={[styles.tabText, activeTab === 'MENU' && styles.tabTextActive]}>Menu</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.tab, activeTab === 'EARNINGS' && styles.tabActive]}
                 onPress={() => setActiveTab('EARNINGS')}
               >
-                <Text style={[styles.tabText, activeTab === 'EARNINGS' && styles.tabTextActive]}>Money & Earnings</Text>
+                <Text style={[styles.tabText, activeTab === 'EARNINGS' && styles.tabTextActive]}>Wallet</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tab, activeTab === 'PROFILE' && styles.tabActive]}
+                onPress={() => setActiveTab('PROFILE')}
+              >
+                <Text style={[styles.tabText, activeTab === 'PROFILE' && styles.tabTextActive]}>Profile</Text>
               </TouchableOpacity>
           </ScrollView>
         </View>
@@ -214,17 +317,17 @@ export default function RestaurantDashboard() {
                       <View style={{flexDirection: 'row'}}>
                         {item.status === 'PENDING' && (
                           <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#020617'}]} onPress={() => updateStatus(item.id, 'ACCEPTED')}>
-                            <Text style={styles.actionText}>Accept Order</Text>
+                            <Text style={styles.actionText}>Accept</Text>
                           </TouchableOpacity>
                         )}
                         {item.status === 'ACCEPTED' && (
                           <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#3b82f6'}]} onPress={() => updateStatus(item.id, 'PREPARING')}>
-                            <Text style={styles.actionText}>Start Preparing</Text>
+                            <Text style={styles.actionText}>Prepare</Text>
                           </TouchableOpacity>
                         )}
                         {item.status === 'PREPARING' && (
                           <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#10b981'}]} onPress={() => updateStatus(item.id, 'READY_FOR_PICKUP')}>
-                            <Text style={styles.actionText}>Mark as Ready</Text>
+                            <Text style={styles.actionText}>Ready</Text>
                           </TouchableOpacity>
                         )}
                       </View>
@@ -242,6 +345,10 @@ export default function RestaurantDashboard() {
               <View style={[styles.orderCard, {padding: 20}]}>
                 <Text style={{fontSize: 18, fontWeight: '900', color: '#0f172a', marginBottom: 15}}>Add New Item</Text>
                 
+                <TouchableOpacity onPress={() => pickImage(setNewItemImage)} style={{height: 120, backgroundColor: '#f8fafc', borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', marginBottom: 15, overflow: 'hidden'}}>
+                    {newItemImage ? <Image source={{uri: newItemImage}} style={{width: '100%', height: '100%'}} /> : <Text style={{color: '#64748b'}}>+ Add Item Photo</Text>}
+                </TouchableOpacity>
+
                 <TextInput style={styles.input} placeholder="Item Name (e.g. Burger)" value={newItemName} onChangeText={setNewItemName} />
                 <TextInput style={styles.input} placeholder="Description" value={newItemDesc} onChangeText={setNewItemDesc} />
                 <TextInput style={styles.input} placeholder="Base Price (₹)" value={newItemPrice} onChangeText={setNewItemPrice} keyboardType="number-pad" />
@@ -256,9 +363,12 @@ export default function RestaurantDashboard() {
               <Text style={{fontSize: 18, fontWeight: '900', color: '#0f172a', marginTop: 10, marginBottom: 15}}>Your Menu</Text>
               {menuItems.map((item: any) => (
                 <View key={item.id} style={[styles.orderCard, {flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15}]}>
-                  <View>
-                    <Text style={{fontSize: 16, fontWeight: 'bold', color: '#0f172a'}}>{item.name}</Text>
-                    {item.description ? <Text style={{fontSize: 13, color: '#64748b', marginTop: 2}}>{item.description}</Text> : null}
+                  <View style={{flexDirection: 'row', alignItems: 'center', flex: 1}}>
+                    {item.image_url && <Image source={{uri: item.image_url}} style={{width: 50, height: 50, borderRadius: 8, marginRight: 15}} />}
+                    <View style={{flex: 1}}>
+                        <Text style={{fontSize: 16, fontWeight: 'bold', color: '#0f172a'}}>{item.name}</Text>
+                        {item.description ? <Text style={{fontSize: 13, color: '#64748b', marginTop: 2}} numberOfLines={1}>{item.description}</Text> : null}
+                    </View>
                   </View>
                   <Text style={{fontSize: 16, fontWeight: '900', color: '#10b981'}}>₹{item.price}</Text>
                 </View>
@@ -271,33 +381,64 @@ export default function RestaurantDashboard() {
           activeTab === 'EARNINGS' && (
             <View>
               <View style={styles.earningsCard}>
-                <Text style={styles.earningsLabel}>Today's Earnings</Text>
-                <Text style={styles.earningsAmount}>₹{todaysEarnings}</Text>
+                <Text style={styles.earningsLabel}>Available Balance</Text>
+                <Text style={styles.earningsAmount}>₹{availableBalance}</Text>
+                <Text style={{color: '#93c5fd', marginTop: 10, fontWeight: 'bold'}}>Total Earned: ₹{profile?.total_earnings || 0}</Text>
               </View>
 
-              <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                <View style={styles.statCard}>
-                  <Text style={styles.statSub }>Orders Today</Text>
-                  <Text style={styles.statMain}>{pastOrders.length}</Text>
-                </View>
-                <View style={styles.statCard}>
-                  <Text style={styles.statSub }>All Time Total</Text>
-                  <Text style={styles.statMain}>₹{profile?.total_earnings || 0}</Text>
-                </View>
-              </View>
+              <View style={[styles.orderCard, {padding: 20}]}>
+                  <Text style={{fontSize: 18, fontWeight: '900', color: '#0f172a', marginBottom: 15}}>Withdraw Funds</Text>
+                  <Text style={{color: '#64748b', marginBottom: 10, fontSize: 13}}>Withdraw directly to your UPI ID.</Text>
+                  
+                  {profile?.upi_id ? (
+                      <View style={{backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 15, borderWidth: 1, borderColor: '#e2e8f0'}}>
+                          <Text style={{fontWeight: 'bold', color: '#334155'}}>Linked UPI: {profile.upi_id}</Text>
+                      </View>
+                  ) : (
+                      <Text style={{color: '#ef4444', marginBottom: 15, fontWeight: 'bold'}}>Please set your UPI ID in the Profile tab first.</Text>
+                  )}
 
-              <Text style={{fontSize: 18, fontWeight: '900', color: '#0f172a', marginTop: 30, marginBottom: 15}}>Recent Past Orders</Text>
-              {pastOrders.map((item: any) => (
-                <View key={item.id} style={[styles.orderCard, {padding: 15}]}>
-                  <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
-                    <View>
-                      <Text style={styles.orderId}>Order #{item.id}</Text>
-                      <Text style={styles.orderTime}>Delivered</Text>
-                    </View>
-                    <Text style={{fontSize: 16, fontWeight: '800', color: '#10b981'}}>+₹{item.total_amount}</Text>
-                  </View>
-                </View>
-              ))}
+                  <TextInput style={styles.input} placeholder="Amount to withdraw (₹)" value={withdrawAmount} onChangeText={setWithdrawAmount} keyboardType="number-pad" />
+                  
+                  <TouchableOpacity 
+                      style={[styles.actionBtn, {backgroundColor: '#10b981', alignItems: 'center'}]} 
+                      onPress={handleWithdraw} 
+                      disabled={withdrawing || !profile?.upi_id}
+                  >
+                      <Text style={styles.actionText}>{withdrawing ? 'Processing...' : 'Withdraw to UPI'}</Text>
+                  </TouchableOpacity>
+              </View>
+            </View>
+          )
+        }
+
+        {
+          activeTab === 'PROFILE' && (
+            <View style={[styles.orderCard, {padding: 20}]}>
+                <Text style={{fontSize: 18, fontWeight: '900', color: '#0f172a', marginBottom: 15}}>Edit Profile</Text>
+                
+                <TouchableOpacity onPress={() => pickImage(setEditPhoto)} style={{alignSelf: 'center', marginBottom: 20}}>
+                    {editPhoto ? (
+                        <Image source={{uri: editPhoto}} style={{width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#e2e8f0'}} />
+                    ) : (
+                        <View style={{width: 100, height: 100, borderRadius: 50, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center'}}>
+                            <Text style={{fontSize: 30}}>📸</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                <Text style={{fontSize: 13, fontWeight: 'bold', color: '#64748b', marginBottom: 5}}>Restaurant Name</Text>
+                <TextInput style={styles.input} value={editName} onChangeText={setEditName} placeholder="Name" />
+                
+                <Text style={{fontSize: 13, fontWeight: 'bold', color: '#64748b', marginBottom: 5}}>Description</Text>
+                <TextInput style={styles.input} value={editDesc} onChangeText={setEditDesc} placeholder="Description" />
+                
+                <Text style={{fontSize: 13, fontWeight: 'bold', color: '#64748b', marginBottom: 5}}>Bank / UPI ID</Text>
+                <TextInput style={styles.input} value={editUpi} onChangeText={setEditUpi} placeholder="example@upi" />
+
+                <TouchableOpacity style={[styles.actionBtn, {backgroundColor: '#020617', alignItems: 'center', marginTop: 10}]} onPress={handleSaveProfile} disabled={savingProfile}>
+                  <Text style={styles.actionText}>{savingProfile ? 'Saving...' : 'Save Profile'}</Text>
+                </TouchableOpacity>
             </View>
           )
         }

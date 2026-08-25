@@ -28,6 +28,8 @@ class RestaurantProfile(Base):
     
     # Financials
     total_earnings = Column(Integer, default=0)
+    upi_id = Column(String, nullable=True)
+    withdrawn_amount = Column(Integer, default=0)
     
 class DeliveryPartnerProfile(Base):
     __tablename__ = "delivery_partners"
