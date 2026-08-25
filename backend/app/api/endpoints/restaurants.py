@@ -186,3 +186,26 @@ def get_restaurant_by_id(restaurant_id: int, db: Session = Depends(get_db)):
     restaurant.review_count = stats[1] if stats[1] else 0
     
     return restaurant
+
+@router.delete("/{restaurant_id}")
+def delete_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
+    restaurant = db.query(RestaurantProfile).filter(RestaurantProfile.id == restaurant_id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Not found")
+    # cascading deletes would normally happen here or via DB constraints
+    db.delete(restaurant)
+    db.commit()
+    return {"message": "Deleted successfully"}
+
+@router.put("/{restaurant_id}", response_model=RestaurantProfileResponse)
+def admin_update_restaurant(restaurant_id: int, profile_data: RestaurantProfileUpdate, db: Session = Depends(get_db)):
+    restaurant = db.query(RestaurantProfile).filter(RestaurantProfile.id == restaurant_id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    for key, value in profile_data.model_dump(exclude_unset=True).items():
+        setattr(restaurant, key, value)
+        
+    db.commit()
+    db.refresh(restaurant)
+    return restaurant

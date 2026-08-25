@@ -100,9 +100,17 @@ export default function RestaurantDashboard() {
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: true,
           aspect: [4, 3],
-          quality: 0.5,
+          quality: 0.3,
+          base64: true
       });
-      if (!result.canceled) setter(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets[0]) {
+          const asset = result.assets[0];
+          if (asset.base64) {
+              setter(`data:image/jpeg;base64,${asset.base64}`);
+          } else {
+              setter(asset.uri); // fallback
+          }
+      }
   };
 
   const handleAddItem = async () => {

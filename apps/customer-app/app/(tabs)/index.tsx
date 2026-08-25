@@ -427,7 +427,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
                 
                 <View style={styles.mainRestOverlay}>
-                    <Text style={styles.mainRestOffer}>🎉 Flat ₹150 OFF</Text>
+                    <Text style={styles.mainRestOffer}>{item.offer_text || '🎉 Flat ₹150 OFF'}</Text>
                     <Text style={styles.mainRestTime}>{item.id * 5 + 15} mins</Text>
                 </View>
             </View>

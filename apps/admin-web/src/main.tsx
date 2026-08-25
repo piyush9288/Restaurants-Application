@@ -81,9 +81,35 @@ const DashboardStats = ({ orders }: { orders: any[] }) => {
 
 const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout: () => void }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [data, setData] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const [data, setData] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  
+  const [editModalData, setEditModalData] = useState<any>(null);
+
+  const handleUpdateRestaurant = (e: any) => {
+    e.preventDefault();
+    const payload = {
+        name: editModalData.name,
+        description: editModalData.description,
+        address: editModalData.address,
+        offer_text: editModalData.offer_text
+    };
+    fetch(`${API_URL}/api/restaurants/${editModalData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(() => {
+        setEditModalData(null);
+        fetchData();
+    });
+  };
+
+  const handleDeleteRestaurant = (id: number) => {
+    if(!confirm("Are you sure you want to completely delete this restaurant? This cannot be undone.")) return;
+    fetch(`${API_URL}/api/restaurants/${id}`, { method: 'DELETE' })
+        .then(() => fetchData());
+  };
 
   const fetchData = () => {
     setLoading(true);
@@ -248,6 +274,18 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
                                 Ban
                             </button>
                         )}
+                        <button 
+                            onClick={() => setEditModalData(item)}
+                            style={{backgroundColor: '#6b7280', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'}}
+                        >
+                            Edit
+                        </button>
+                        <button 
+                            onClick={() => handleDeleteRestaurant(item.id)}
+                            style={{backgroundColor: '#000', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'}}
+                        >
+                            Delete
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -322,6 +360,38 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
           </div>
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editModalData && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+            <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', width: '400px', maxWidth: '90%' }}>
+                <h3 style={{ marginTop: 0, fontSize: '20px', color: '#111827' }}>Edit Restaurant</h3>
+                <form onSubmit={handleUpdateRestaurant} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: '#4b5563', marginBottom: '5px' }}>Name</label>
+                        <input value={editModalData.name} onChange={e => setEditModalData({...editModalData, name: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box' }} required />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: '#4b5563', marginBottom: '5px' }}>Description</label>
+                        <input value={editModalData.description || ''} onChange={e => setEditModalData({...editModalData, description: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: '#4b5563', marginBottom: '5px' }}>Address</label>
+                        <input value={editModalData.address || ''} onChange={e => setEditModalData({...editModalData, address: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', fontSize: '13px', color: '#4b5563', marginBottom: '5px' }}>Offer Text</label>
+                        <input value={editModalData.offer_text || ''} onChange={e => setEditModalData({...editModalData, offer_text: e.target.value})} style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                        <button type="submit" style={{ flex: 1, backgroundColor: '#fc8019', color: 'white', padding: '10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>Save</button>
+                        <button type="button" onClick={() => setEditModalData(null)} style={{ flex: 1, backgroundColor: '#f3f4f6', color: '#374151', padding: '10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -179,7 +179,7 @@ export default function RestaurantMenuScreen() {
                 
                 <View style={styles.offerBanner}>
                     <Text style={styles.offerBannerIcon}>🎉</Text>
-                    <Text style={styles.offerBannerText}>60% OFF up to ₹120 on orders above ₹199</Text>
+                    <Text style={styles.offerBannerText}>{restaurant?.offer_text || '60% OFF up to ₹120 on orders above ₹199'}</Text>
                 </View>
             </View>
 

@@ -24,6 +24,7 @@ class RestaurantProfile(Base):
     phone = Column(String, nullable=True)
     type = Column(String, default="FOOD") # 'FOOD' or 'MART'
     photo_url = Column(String, nullable=True)
+    offer_text = Column(String, default="🎉 Flat ₹150 OFF")
     is_verified = Column(Boolean, default=False)
     is_banned = Column(Boolean, default=False)
     
