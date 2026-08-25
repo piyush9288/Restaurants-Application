@@ -106,12 +106,13 @@ export default function MyOrdersScreen() {
                 if (item.items) {
                     item.items.forEach((orderItem: any) => {
                         const menuItem = orderItem.menu_item || { id: orderItem.id, name: 'Reordered Item', price: orderItem.price || 0, restaurant_id: item.restaurant_id };
+                        const qty = orderItem.quantity || 1;
                         if (orderType === 'MART') {
                             setGlobalService('MART');
-                            addToMartCart(menuItem, orderItem.quantity || 1);
+                            for(let i=0; i<qty; i++) addToMartCart(menuItem);
                         } else {
                             setGlobalService('FOOD');
-                            addToCart(menuItem, orderItem.quantity || 1);
+                            for(let i=0; i<qty; i++) addToCart(menuItem, item.restaurant_id.toString());
                         }
                     });
                 }
