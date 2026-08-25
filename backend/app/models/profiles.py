@@ -40,3 +40,8 @@ class DeliveryPartnerProfile(Base):
     phone = Column(String, nullable=True)
     is_verified = Column(Boolean, default=False)
     is_online = Column(Boolean, default=False)
+    
+    # Financials
+    total_earnings = Column(Integer, default=0)
+    upi_id = Column(String, nullable=True)
+    withdrawn_amount = Column(Integer, default=0)

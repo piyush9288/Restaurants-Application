@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { useState, useCallback } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useCart } from '../CartContext';
 
 // @ts-ignore
 const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
@@ -10,6 +11,7 @@ export default function MyOrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [orderType, setOrderType] = useState('FOOD'); // 'FOOD' or 'MART'
   const router = useRouter();
+  const { addToCart, addToMartCart, setGlobalService } = useCart();
 
   const fetchOrders = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -98,7 +100,24 @@ export default function MyOrdersScreen() {
             <Text style={styles.totalLabel}>Total Paid</Text>
             <Text style={styles.totalText}>₹{item.total_amount}</Text>
         </View>
-        <TouchableOpacity style={[styles.reorderBtn, { backgroundColor: orderType === 'MART' ? '#16a34a' : '#020617' }]} onPress={() => router.push('/')}>
+        <TouchableOpacity 
+            style={[styles.reorderBtn, { backgroundColor: orderType === 'MART' ? '#16a34a' : '#020617' }]} 
+            onPress={() => {
+                if (item.items) {
+                    item.items.forEach((orderItem: any) => {
+                        const menuItem = orderItem.menu_item || { id: orderItem.id, name: 'Reordered Item', price: orderItem.price || 0, restaurant_id: item.restaurant_id };
+                        if (orderType === 'MART') {
+                            setGlobalService('MART');
+                            addToMartCart(menuItem, orderItem.quantity || 1);
+                        } else {
+                            setGlobalService('FOOD');
+                            addToCart(menuItem, orderItem.quantity || 1);
+                        }
+                    });
+                }
+                router.push('/cart');
+            }}
+        >
           <Text style={styles.reorderText}>REORDER</Text>
         </TouchableOpacity>
       </View>

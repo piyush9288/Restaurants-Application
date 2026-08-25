@@ -108,6 +108,20 @@ def update_order_status(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
         
+    # If transitioning to DELIVERED, add earnings (only once)
+    if status == 'DELIVERED' and order.status != 'DELIVERED':
+        from app.models.profiles import RestaurantProfile, DeliveryPartnerProfile
+        restaurant = db.query(RestaurantProfile).filter(RestaurantProfile.id == order.restaurant_id).first()
+        if restaurant:
+            # Base price earnings (approx) or total amount. Using total_amount for simplicity.
+            restaurant.total_earnings = getattr(restaurant, 'total_earnings', 0) + order.total_amount
+            
+        if order.delivery_partner_id:
+            rider = db.query(DeliveryPartnerProfile).filter(DeliveryPartnerProfile.user_id == order.delivery_partner_id).first()
+            if rider:
+                # Flat ₹40 delivery fee
+                rider.total_earnings = getattr(rider, 'total_earnings', 0) + 40
+                
     order.status = status
     
     # If a delivery rider accepts it, assign it to them

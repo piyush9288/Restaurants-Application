@@ -56,3 +56,43 @@ def update_profile(profile_data: ProfileUpdate, current_user: User = Depends(get
         
     db.commit()
     return {"message": "Profile updated successfully"}
+
+from app.models.profiles import DeliveryPartnerProfile
+
+class DeliveryWithdrawRequest(BaseModel):
+    amount: float
+    upi_id: str
+
+@router.get("/delivery/me")
+def get_delivery_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role != UserRole.DELIVERY_PARTNER:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    profile = db.query(DeliveryPartnerProfile).filter(DeliveryPartnerProfile.user_id == current_user.id).first()
+    if not profile:
+        profile = DeliveryPartnerProfile(user_id=current_user.id, name=f"Rider {current_user.id}")
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+        
+    return profile
+
+@router.post("/delivery/withdraw")
+def withdraw_delivery_earnings(request: DeliveryWithdrawRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.role != UserRole.DELIVERY_PARTNER:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    profile = db.query(DeliveryPartnerProfile).filter(DeliveryPartnerProfile.user_id == current_user.id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+        
+    profile.upi_id = request.upi_id
+        
+    available = profile.total_earnings - profile.withdrawn_amount
+    if request.amount > available or request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid withdrawal amount")
+        
+    profile.withdrawn_amount += request.amount
+    db.commit()
+    return {"message": "Withdrawal successful", "withdrawn_amount": profile.withdrawn_amount}
+
