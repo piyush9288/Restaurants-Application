@@ -371,14 +371,16 @@ export default function HomeScreen() {
   useEffect(() => {
       let filtered = [...allRestaurants];
       
-      // Removed mock activeTab filtering to ensure restaurants always show up 
-      // even with a small backend dataset.
+      // Filter by FOOD vs MART service type
+      if (globalService) {
+          filtered = filtered.filter((r: any) => (r.type || 'FOOD') === globalService);
+      }
       
       if (searchQuery) {
-          filtered = filtered.filter((r: any) => r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.description.toLowerCase().includes(searchQuery.toLowerCase()));
+          filtered = filtered.filter((r: any) => r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.description?.toLowerCase().includes(searchQuery.toLowerCase()));
       }
       if (activeCategory) {
-          filtered = filtered.filter((r: any) => r.description.toLowerCase().includes(activeCategory.toLowerCase()));
+          filtered = filtered.filter((r: any) => r.description?.toLowerCase().includes(activeCategory.toLowerCase()));
       }
       if (diet === 'VEG') {
           filtered = filtered.filter((r: any) => r.id % 2 === 0);
@@ -394,7 +396,8 @@ export default function HomeScreen() {
       // Animate the list when filter changes
       listFadeAnim.setValue(0);
       Animated.timing(listFadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-  }, [searchQuery, diet, activeCategory, activeFilter, activeTab, allRestaurants]);
+  }, [searchQuery, diet, activeCategory, activeFilter, activeTab, allRestaurants, globalService]);
+
 
   const toggleCategory = (keyword: string) => {
       setActiveCategory(prev => prev === keyword ? '' : keyword);

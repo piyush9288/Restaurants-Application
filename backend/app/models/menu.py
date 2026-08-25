@@ -12,3 +12,4 @@ class MenuItem(Base):
     price = Column(Float, nullable=False)
     is_veg = Column(Boolean, default=True)
     is_available = Column(Boolean, default=True)
+    image_url = Column(String, nullable=True)

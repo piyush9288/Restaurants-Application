@@ -93,7 +93,7 @@ export default function RestaurantMenuScreen() {
       'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80',
       'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=500&q=80'
     ];
-    const imgUrl = foodImages[index % foodImages.length];
+    const imgUrl = item.image_url || foodImages[index % foodImages.length];
     
     // Simple staggered fade in for items
     const inputRange = [-1, 0, (index * 80) + 100];

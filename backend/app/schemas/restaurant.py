@@ -21,8 +21,8 @@ class RestaurantProfileResponse(RestaurantProfileBase):
     id: int
     user_id: int
     is_verified: bool
-    total_earnings: int
-    withdrawn_amount: int
+    total_earnings: int = 0
+    withdrawn_amount: int = 0
 
     class Config:
         from_attributes = True
