@@ -59,7 +59,7 @@ const AddButton = ({ item, cart, addToCart, removeFromCart, restaurantId }: any)
 
 export default function RestaurantMenuScreen() {
   const { id, name } = useLocalSearchParams();
-  const [menu, setMenu] = useState([]);
+  const [menu, setMenu] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { cart, addToCart, removeFromCart } = useCart();

@@ -56,6 +56,12 @@ app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(restaurants.router, prefix="/api/restaurants", tags=["restaurants"])
 app.include_router(orders.router, prefix="/api/orders", tags=["orders"])
+from fastapi import Response
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(content=b"", media_type="image/x-icon")
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Food Delivery Platform API"}

@@ -1,86 +1,60 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Platform, SafeAreaView, ActivityIndicator, ScrollView, Animated } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Platform, SafeAreaView, ScrollView, Animated, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-
-// @ts-ignore
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+import * as ImagePicker from 'expo-image-picker';
+import { useCart } from './CartContext';
 
 export default function ProfileScreen() {
+  const { userProfile, setUserProfile } = useCart();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [pincode, setPincode] = useState('');
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [photoUri, setPhotoUri] = useState('');
   const [saving, setSaving] = useState(false);
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const router = useRouter();
 
-  // Animation states
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      if (!token) {
-        router.replace('/login');
-        return;
-      }
-      try {
-        const res = await fetch(`${API_URL}/api/users/me/profile`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setName(data.name || '');
-          setPhone(data.phone || '');
-          setAddress(data.address || '');
-          setPincode(data.pincode || '');
-          setEmail(data.email || '');
-        }
-      } catch (err) {
-        console.error("Error fetching profile", err);
-      } finally {
-        setLoading(false);
-        Animated.parallel([
-          Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-          Animated.timing(translateY, { toValue: 0, duration: 500, useNativeDriver: true })
-        ]).start();
-      }
-    };
-    fetchProfile();
-  }, []);
+    if (userProfile) {
+        setName(userProfile.name || '');
+        setPhone(userProfile.phone || '');
+        setAddress(userProfile.address || '');
+        setPincode(userProfile.pincode || '');
+        setPhotoUri(userProfile.photoUri || '');
+    }
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: 0, duration: 500, useNativeDriver: true })
+    ]).start();
+  }, [userProfile]);
 
   const handleFetchLocation = async () => {
     if (Platform.OS === 'web') {
       alert("Auto-fetch location is better supported on mobile devices. Please enter manually.");
       return;
     }
-    
     setFetchingLocation(true);
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission denied', 'Allow location access to use auto-fetch.');
-        setFetchingLocation(false);
         return;
       }
-
       let location = await Location.getCurrentPositionAsync({});
       let reverseGeocode = await Location.reverseGeocodeAsync({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude
       });
-      
       if (reverseGeocode && reverseGeocode.length > 0) {
         const loc = reverseGeocode[0];
         const fullAddress = `${loc.name ? loc.name + ', ' : ''}${loc.street ? loc.street + ', ' : ''}${loc.city ? loc.city + ', ' : ''}${loc.region ? loc.region : ''}`;
         setAddress(fullAddress);
         if (loc.postalCode) setPincode(loc.postalCode);
-      } else {
-        Alert.alert("Error", "Could not fetch address details");
       }
     } catch (err) {
       Alert.alert("Error", "Could not fetch location");
@@ -89,43 +63,35 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleSave = async () => {
-    if (!name || !phone || !address || !pincode) {
-       if (Platform.OS === 'web') alert("Please fill all details completely!");
-       else Alert.alert("Incomplete", "Please fill all details completely!");
-       return;
-    }
-    
-    setSaving(true);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    try {
-      const res = await fetch(`${API_URL}/api/users/me/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ name, phone, address, pincode })
-      });
-      if (res.ok) {
-        if (Platform.OS === 'web') alert("Profile updated successfully!");
-        else Alert.alert("Success", "Profile updated successfully!");
-        router.back();
-      } else {
-        if (Platform.OS === 'web') alert("Failed to update profile.");
-        else Alert.alert("Error", "Failed to update profile.");
-      }
-    } catch (err) {
-      if (Platform.OS === 'web') alert("Network error.");
-      else Alert.alert("Error", "Network error.");
-    } finally {
-      setSaving(false);
+  const handlePhotoUpload = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setPhotoUri(result.assets[0].uri);
     }
   };
 
-  if (loading) {
-    return <View style={{flex:1, justifyContent:'center', alignItems:'center', backgroundColor: '#f9fafb'}}><ActivityIndicator size="large" color="#fc8019" /></View>;
-  }
+  const handleSave = async () => {
+    setSaving(true);
+    await setUserProfile({
+        ...userProfile,
+        name,
+        phone,
+        address,
+        pincode,
+        photoUri
+    });
+    setSaving(false);
+    if (Platform.OS !== 'web') {
+        Alert.alert("Saved", "Profile & Location Updated Successfully!", [{text: "OK"}]);
+    } else {
+        alert("Profile & Location Updated Successfully!");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -133,88 +99,67 @@ export default function ProfileScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>My Account</Text>
+        <Text style={styles.title}>My Profile</Text>
         <View style={{width: 40}} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY }] }}>
-            
             <View style={styles.avatarSection}>
-                <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarEmoji}>👤</Text>
-                </View>
-                <Text style={styles.avatarEmail}>{email}</Text>
-                <Text style={styles.avatarSubText}>Manage your details</Text>
+                <TouchableOpacity activeOpacity={0.8} onPress={handlePhotoUpload}>
+                    <View style={styles.avatarCircle}>
+                        {photoUri ? (
+                            <Image source={{ uri: photoUri }} style={{width: 116, height: 116, borderRadius: 58}} />
+                        ) : (
+                            <Text style={styles.avatarEmoji}>👤</Text>
+                        )}
+                        <View style={styles.editBadge}>
+                            <Text style={styles.editBadgeText}>📷</Text>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+                <Text style={styles.avatarSubText}>Tap to add/change photo (Optional)</Text>
+                <Text style={styles.avatarEmail}>{userProfile?.email || 'user@example.com'}</Text>
             </View>
 
-            <View style={styles.formCard}>
+            <View style={styles.formSection}>
+                <Text style={styles.sectionHeader}>PERSONAL DETAILS</Text>
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Full Name</Text>
-                    <TextInput 
-                        style={styles.input} 
-                        value={name} 
-                        onChangeText={setName} 
-                        placeholder="e.g. John Doe" 
-                        placeholderTextColor="#a1a1aa"
-                    />
+                    <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. John Doe" placeholderTextColor="#94a3b8" />
                 </View>
-
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Phone Number</Text>
-                    <TextInput 
-                        style={styles.input} 
-                        value={phone} 
-                        onChangeText={setPhone} 
-                        placeholder="e.g. +91 98765 43210" 
-                        keyboardType="phone-pad"
-                        placeholderTextColor="#a1a1aa" 
-                    />
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <View style={styles.locationHeaderRow}>
-                        <Text style={styles.label}>Delivery Address</Text>
-                        <TouchableOpacity onPress={handleFetchLocation} style={styles.gpsBtn}>
-                            <Text style={styles.gpsBtnText}>{fetchingLocation ? "Fetching..." : "📍 Auto-fetch"}</Text>
-                        </TouchableOpacity>
+                    <View style={styles.phoneRow}>
+                        <View style={styles.countryCodeBox}>
+                            <Text style={styles.countryCodeEmoji}>🇮🇳</Text>
+                            <Text style={styles.countryCodeText}>+91</Text>
+                        </View>
+                        <TextInput style={[styles.input, {flex: 1, borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeftWidth: 0}]} value={phone} onChangeText={setPhone} placeholder="98765 43210" keyboardType="phone-pad" maxLength={10} placeholderTextColor="#94a3b8" />
                     </View>
-                    <TextInput 
-                        style={[styles.input, styles.textArea]} 
-                        value={address} 
-                        onChangeText={setAddress} 
-                        placeholder="House No, Building, Street, Area" 
-                        multiline 
-                        numberOfLines={3} 
-                        placeholderTextColor="#a1a1aa"
-                    />
                 </View>
-
+                <Text style={[styles.sectionHeader, {marginTop: 15}]}>DELIVERY LOCATION</Text>
+                <TouchableOpacity onPress={handleFetchLocation} style={styles.gpsFullBtn}>
+                    <Text style={styles.gpsFullBtnIcon}>📍</Text>
+                    <Text style={styles.gpsFullBtnText}>{fetchingLocation ? "Fetching..." : "Auto-Fetch Current Location"}</Text>
+                </TouchableOpacity>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Complete Address</Text>
+                    <TextInput style={[styles.input, styles.textArea]} value={address} onChangeText={setAddress} placeholder="House/Flat No, Building, Street, Area" multiline numberOfLines={3} placeholderTextColor="#94a3b8" />
+                </View>
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>Pincode / Zip</Text>
-                    <TextInput 
-                        style={styles.input} 
-                        value={pincode} 
-                        onChangeText={setPincode} 
-                        placeholder="e.g. 110001" 
-                        keyboardType="numeric" 
-                        placeholderTextColor="#a1a1aa"
-                    />
+                    <TextInput style={styles.input} value={pincode} onChangeText={setPincode} placeholder="e.g. 110001" keyboardType="numeric" placeholderTextColor="#94a3b8" />
                 </View>
             </View>
 
             <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-            <Text style={styles.saveBtnText}>{saving ? "Updating Profile..." : "Save Details"}</Text>
+                <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save Details"}</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={styles.logoutBtn} onPress={() => {
-                if (typeof window !== 'undefined') localStorage.removeItem('token');
-                router.replace('/');
-                if (Platform.OS === 'web') alert("Logged out");
-            }}>
-            <Text style={styles.logoutBtnText}>Sign Out</Text>
+            <TouchableOpacity style={styles.logoutBtn} onPress={() => router.replace('/')}>
+                <Text style={styles.logoutBtnText}>Sign Out</Text>
             </TouchableOpacity>
-            
             <Text style={styles.versionText}>App Version 1.0.0 (Premium)</Text>
             <View style={{height: 40}} />
         </Animated.View>
@@ -224,37 +169,35 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 70, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? 25 : 0, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.03, elevation: 2, zIndex: 10 },
-  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#f3f4f6', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
-  backButtonText: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
-  title: { fontSize: 18, fontWeight: '900', color: '#111827', letterSpacing: 0.5 },
-  
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 70, backgroundColor: '#ffffff', paddingTop: Platform.OS === 'android' ? 25 : 0, zIndex: 10, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.03, elevation: 2 },
+  backButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' },
+  backButtonText: { fontSize: 20, fontWeight: 'bold', color: '#0f172a' },
+  title: { fontSize: 18, fontWeight: '900', color: '#0f172a', letterSpacing: 0.5 },
   content: { padding: 20 },
-  
-  avatarSection: { alignItems: 'center', marginBottom: 25 },
-  avatarCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#fff3ed', justifyContent: 'center', alignItems: 'center', shadowColor: '#fc8019', shadowOffset: {width:0, height:8}, shadowOpacity: 0.15, shadowRadius: 15, elevation: 8, marginBottom: 15 },
-  avatarEmoji: { fontSize: 50 },
-  avatarEmail: { fontSize: 18, fontWeight: '800', color: '#111827' },
-  avatarSubText: { fontSize: 13, color: '#6b7280', marginTop: 4, fontWeight: '500' },
-  
-  formCard: { backgroundColor: '#fff', padding: 25, borderRadius: 24, shadowColor: '#000', shadowOffset: {width: 0, height: 10}, shadowOpacity: 0.04, shadowRadius: 20, elevation: 5, marginBottom: 25 },
-  
-  inputGroup: { marginBottom: 20 },
-  locationHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  label: { fontSize: 13, fontWeight: '800', color: '#4b5563', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  
-  input: { backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 15, height: 55, fontSize: 16, color: '#111827', fontWeight: '500' },
-  textArea: { height: 90, paddingTop: 15, textAlignVertical: 'top' },
-  
-  gpsBtn: { backgroundColor: '#fc8019', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, shadowColor: '#fc8019', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.2, shadowRadius: 3, elevation: 2 },
-  gpsBtnText: { fontSize: 11, fontWeight: '800', color: '#fff' },
-  
-  saveBtn: { backgroundColor: '#fc8019', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#fc8019', shadowOffset: {width: 0, height: 6}, shadowOpacity: 0.25, shadowRadius: 10, elevation: 6 },
-  saveBtnText: { color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 },
-  
-  logoutBtn: { backgroundColor: '#fff', borderWidth: 2, borderColor: '#fee2e2', paddingVertical: 18, borderRadius: 16, alignItems: 'center', marginTop: 15 },
+  avatarSection: { alignItems: 'center', marginBottom: 35, marginTop: 10 },
+  avatarCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#111827', position: 'relative', shadowColor: '#111827', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.15, shadowRadius: 15, elevation: 5 },
+  avatarEmoji: { fontSize: 45 },
+  editBadge: { position: 'absolute', bottom: 0, right: 0, width: 36, height: 36, borderRadius: 18, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#ffffff' },
+  editBadgeText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
+  avatarSubText: { fontSize: 12, color: '#64748b', marginTop: 12, fontWeight: '600' },
+  avatarEmail: { fontSize: 20, fontWeight: '900', color: '#0f172a', marginTop: 6 },
+  formSection: { backgroundColor: '#ffffff', padding: 25, borderRadius: 28, borderWidth: 1, borderColor: '#f1f5f9', marginBottom: 25, shadowColor: '#000', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.04, shadowRadius: 20, elevation: 4 },
+  sectionHeader: { fontSize: 12, fontWeight: '900', color: '#111827', letterSpacing: 1.5, marginBottom: 20 },
+  inputGroup: { marginBottom: 22 },
+  label: { fontSize: 13, fontWeight: '800', color: '#64748b', marginBottom: 8 },
+  input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 16, paddingHorizontal: 18, height: 58, fontSize: 16, color: '#0f172a', fontWeight: '600' },
+  phoneRow: { flexDirection: 'row', alignItems: 'center' },
+  countryCodeBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', height: 58, paddingHorizontal: 15, borderTopLeftRadius: 16, borderBottomLeftRadius: 16, borderWidth: 1, borderColor: '#e2e8f0' },
+  countryCodeEmoji: { fontSize: 18, marginRight: 6 },
+  countryCodeText: { color: '#0f172a', fontSize: 16, fontWeight: '800' },
+  gpsFullBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.05)', borderWidth: 1, borderColor: 'rgba(15, 23, 42, 0.1)', height: 55, borderRadius: 16, marginBottom: 20 },
+  gpsFullBtnIcon: { fontSize: 18, marginRight: 8 },
+  gpsFullBtnText: { color: '#111827', fontSize: 15, fontWeight: '800' },
+  textArea: { height: 100, paddingTop: 18, textAlignVertical: 'top' },
+  saveBtn: { backgroundColor: '#111827', paddingVertical: 18, borderRadius: 20, alignItems: 'center', shadowColor: '#111827', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 },
+  saveBtnText: { color: '#ffffff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 },
+  logoutBtn: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#fee2e2', paddingVertical: 18, borderRadius: 20, alignItems: 'center', marginTop: 10 },
   logoutBtnText: { color: '#ef4444', fontWeight: '800', fontSize: 16 },
-  
-  versionText: { textAlign: 'center', color: '#a1a1aa', fontSize: 12, marginTop: 25, fontWeight: '600' }
+  versionText: { textAlign: 'center', color: '#94a3b8', fontSize: 12, marginTop: 30, fontWeight: '700', letterSpacing: 1 }
 });

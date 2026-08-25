@@ -42,9 +42,17 @@ const CartItem = ({ item, onAdd, onRemove }: any) => {
 };
 
 export default function CartScreen() {
-  const { cart, addToCart, removeFromCart, clearCart, getCartTotal, restaurantId } = useCart();
+  const { cart, addToCart, removeFromCart, clearCart, getCartTotal, restaurantId, martCart, addToMartCart, removeFromMartCart, clearMartCart, getMartTotal } = useCart();
   const router = useRouter();
   
+  const [cartType, setCartType] = useState('FOOD'); // 'FOOD' or 'MART'
+
+  const activeCart = cartType === 'FOOD' ? cart : martCart;
+  const activeAdd = cartType === 'FOOD' ? addToCart : addToMartCart;
+  const activeRemove = cartType === 'FOOD' ? removeFromCart : removeFromMartCart;
+  const activeClear = cartType === 'FOOD' ? clearCart : clearMartCart;
+  const activeTotal = cartType === 'FOOD' ? getCartTotal() : getMartTotal();
+
   const slideUp = useRef(new Animated.Value(100)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   
@@ -52,13 +60,15 @@ export default function CartScreen() {
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [upiId, setUpiId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState({ code: '', amount: 0 });
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(slideUp, { toValue: 0, duration: 500, useNativeDriver: true }),
       Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true })
     ]).start();
-  }, []);
+  }, [cartType]);
 
   const handleCheckoutInit = async () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -69,7 +79,7 @@ export default function CartScreen() {
       return;
     }
     
-    if (cart.length === 0) return;
+    if (activeCart.length === 0) return;
 
     try {
       const profileRes = await fetch(`${API_URL}/api/users/me/profile`, {
@@ -103,8 +113,9 @@ export default function CartScreen() {
     setTimeout(async () => {
         try {
           const orderPayload = {
-            restaurant_id: Number(restaurantId),
-            items: cart.map((item: any) => ({
+            restaurant_id: cartType === 'FOOD' ? Number(restaurantId) : 999, // Fallback ID for Mart
+            is_mart: cartType === 'MART',
+            items: activeCart.map((item: any) => ({
               menu_item_id: item.id,
               quantity: item.quantity
             }))
@@ -120,7 +131,7 @@ export default function CartScreen() {
           });
 
           if (res.ok) {
-            clearCart();
+            activeClear();
             setShowPaymentModal(false);
             if (Platform.OS === 'web') alert('Order placed successfully!');
             else Alert.alert('Success', 'Payment Successful! Order placed.');
@@ -139,53 +150,114 @@ export default function CartScreen() {
     }, 1500);
   };
 
-  const total = getCartTotal();
-  const taxes = total * 0.05;
-  const delivery = total > 0 ? 40 : 0;
-  const grandTotal = total + taxes + delivery;
+  const handleApplyCoupon = () => {
+      const code = couponCode.toUpperCase().trim();
+      if (code === 'WELCOME50') {
+          const discount = Math.min(activeTotal * 0.5, 150);
+          setAppliedDiscount({ code, amount: discount });
+      } else if (code === 'PAYTM100') {
+          if (activeTotal >= 399) {
+              setAppliedDiscount({ code, amount: 100 });
+          } else {
+              setAppliedDiscount({ code: '', amount: 0 });
+          }
+      } else {
+          setAppliedDiscount({ code: '', amount: 0 });
+      }
+  };
+
+  const taxes = activeTotal * 0.05;
+  const delivery = activeTotal > 0 ? 40 : 0;
+  const grandTotal = Math.max(0, activeTotal + taxes + delivery - appliedDiscount.amount);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      <View style={styles.headerBlock}>
+        <Text style={styles.headerSubtitle}>YOUR BASKET</Text>
         <Text style={styles.title}>Checkout</Text>
+        
+        {/* Toggle Cart Type */}
+        <View style={{flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 12, padding: 4, marginTop: 15, zIndex: 100}}>
+            <TouchableOpacity 
+                activeOpacity={0.7}
+                style={[{flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10}, cartType === 'FOOD' && {backgroundColor: '#fff', shadowColor: '#000', shadowOffset: {width:0, height:2}, shadowOpacity:0.05, shadowRadius:4, elevation:2}]}
+                onPress={() => setCartType('FOOD')}
+            >
+                <Text style={[{fontWeight: '700', color: '#64748b'}, cartType === 'FOOD' && {color: '#020617', fontWeight: '900'}]}>Food Delivery</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+                activeOpacity={0.7}
+                style={[{flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10}, cartType === 'MART' && {backgroundColor: '#fff', shadowColor: '#000', shadowOffset: {width:0, height:2}, shadowOpacity:0.05, shadowRadius:4, elevation:2}]}
+                onPress={() => setCartType('MART')}
+            >
+                <Text style={[{fontWeight: '700', color: '#64748b'}, cartType === 'MART' && {color: '#16a34a', fontWeight: '900'}]}>Instamart</Text>
+            </TouchableOpacity>
+        </View>
       </View>
 
-      {cart.length === 0 ? (
+      {activeCart.length === 0 ? (
         <Animated.View style={[styles.emptyContainer, { opacity: fadeAnim }]}>
-          <Image source={{uri: 'https://cdn-icons-png.flaticon.com/512/1046/1046786.png'}} style={{width: 150, height: 150, marginBottom: 20, opacity: 0.8}} />
-          <Text style={styles.emptyTitle}>Good food is always cooking!</Text>
-          <Text style={styles.emptySub}>Your cart is empty. Add something from the menu.</Text>
-          <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/')}>
-            <Text style={{color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5}}>BROWSE RESTAURANTS</Text>
+          <Text style={{fontSize: 50, marginBottom: 15}}>{cartType === 'MART' ? '🛒' : '🍽️'}</Text>
+          <Text style={styles.emptyTitle}>Your cart is empty</Text>
+          <Text style={styles.emptySub}>Looks like you haven't added anything to your {cartType === 'MART' ? 'Instamart' : 'Food'} cart yet.</Text>
+          <TouchableOpacity style={[styles.browseBtn, { backgroundColor: cartType === 'MART' ? '#16a34a' : '#020617' }]} onPress={() => router.push('/')}>
+            <Text style={{color: '#fff', fontWeight: '900', fontSize: 14, letterSpacing: 1}}>EXPLORE NOW</Text>
           </TouchableOpacity>
         </Animated.View>
       ) : (
         <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideUp }] }}>
           <FlatList
-            data={cart}
+            data={activeCart}
             showsVerticalScrollIndicator={false}
             keyExtractor={(item, index) => `${item.id}-${index}`}
             contentContainerStyle={{ padding: 15, paddingBottom: 150 }}
-            renderItem={({ item }) => <CartItem item={item} onAdd={addToCart} onRemove={removeFromCart} />}
+            renderItem={({ item }) => <CartItem item={item} onAdd={activeAdd} onRemove={activeRemove} />}
             ListFooterComponent={
-              <View style={styles.billDetails}>
-                <Text style={styles.billHeader}>Bill Summary</Text>
-                <View style={styles.billRow}>
-                  <Text style={styles.billText}>Item Total</Text>
-                  <Text style={styles.billText}>₹{total.toFixed(2)}</Text>
+              <View>
+                {/* Coupon Code Section */}
+                <View style={[styles.couponSection, cartType === 'MART' && { shadowColor: '#16a34a' }]}>
+                    <Text style={[styles.couponTitle, cartType === 'MART' && { color: '#16a34a' }]}>Apply Coupon</Text>
+                    <View style={styles.couponInputRow}>
+                        <TextInput 
+                            style={styles.couponInput}
+                            placeholder="Enter WELCOME50 or PAYTM100"
+                            placeholderTextColor="#9ca3af"
+                            value={couponCode}
+                            onChangeText={setCouponCode}
+                            autoCapitalize="characters"
+                        />
+                        <TouchableOpacity style={[styles.couponApplyBtn, cartType === 'MART' && { backgroundColor: '#16a34a', shadowColor: '#16a34a' }]} onPress={handleApplyCoupon}>
+                            <Text style={styles.couponApplyText}>APPLY</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-                <View style={styles.billRow}>
-                  <Text style={styles.billText}>Delivery Partner Fee</Text>
-                  <Text style={styles.billText}>₹{delivery.toFixed(2)}</Text>
-                </View>
-                <View style={styles.billRow}>
-                  <Text style={styles.billText}>Taxes & Charges</Text>
-                  <Text style={styles.billText}>₹{taxes.toFixed(2)}</Text>
-                </View>
-                <View style={styles.separator} />
-                <View style={styles.billRow}>
-                  <Text style={styles.grandTotalText}>To Pay</Text>
-                  <Text style={styles.grandTotalText}>₹{grandTotal.toFixed(2)}</Text>
+
+                {/* Bill Summary */}
+                <View style={styles.billDetails}>
+                  <Text style={[styles.billHeader, cartType === 'MART' && { color: '#16a34a' }]}>Bill Summary</Text>
+                  <View style={styles.billRow}>
+                    <Text style={styles.billText}>Item Total</Text>
+                    <Text style={styles.billText}>₹{activeTotal.toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.billRow}>
+                    <Text style={styles.billText}>Delivery Partner Fee</Text>
+                    <Text style={styles.billText}>₹{delivery.toFixed(2)}</Text>
+                  </View>
+                  <View style={styles.billRow}>
+                    <Text style={styles.billText}>Taxes & Charges</Text>
+                    <Text style={styles.billText}>₹{taxes.toFixed(2)}</Text>
+                  </View>
+                  {appliedDiscount.amount > 0 && (
+                      <View style={styles.billRow}>
+                          <Text style={[styles.billText, {color: cartType === 'MART' ? '#16a34a' : '#10b981'}]}>Discount ({appliedDiscount.code})</Text>
+                          <Text style={[styles.billText, {color: cartType === 'MART' ? '#16a34a' : '#10b981'}]}>- ₹{appliedDiscount.amount.toFixed(2)}</Text>
+                      </View>
+                  )}
+                  <View style={styles.separator} />
+                  <View style={styles.billRow}>
+                    <Text style={[styles.grandTotalText, cartType === 'MART' && { color: '#16a34a' }]}>To Pay</Text>
+                    <Text style={[styles.grandTotalText, cartType === 'MART' && { color: '#16a34a' }]}>₹{grandTotal.toFixed(2)}</Text>
+                  </View>
                 </View>
               </View>
             }
@@ -194,9 +266,9 @@ export default function CartScreen() {
           <View style={styles.checkoutFooter}>
             <View>
                <Text style={styles.payTotal}>₹{grandTotal.toFixed(2)}</Text>
-               <Text style={styles.paySub}>TOTAL</Text>
+               <Text style={[styles.paySub, cartType === 'MART' && { color: '#16a34a' }]}>TOTAL</Text>
             </View>
-            <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckoutInit}>
+            <TouchableOpacity style={[styles.checkoutBtn, cartType === 'MART' && { backgroundColor: '#16a34a', shadowColor: '#16a34a' }]} onPress={handleCheckoutInit}>
               <Text style={styles.checkoutBtnText}>Select Payment ➔</Text>
             </TouchableOpacity>
           </View>
@@ -261,9 +333,10 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fcfcfc' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: Platform.OS === 'android' ? 90 : 100, backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? 45 : 45, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)', shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.05, elevation: 5, zIndex: 10 },
-  title: { fontSize: 18, fontWeight: '900', color: '#111827', letterSpacing: -0.3 },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  headerBlock: { backgroundColor: '#fff', paddingTop: Platform.OS === 'android' ? 50 : 60, paddingHorizontal: 20, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  headerSubtitle: { fontSize: 12, fontWeight: '700', color: '#64748b', letterSpacing: 1, marginBottom: 4 },
+  title: { fontSize: 28, fontWeight: '900', color: '#0f172a', letterSpacing: -0.5 },
   
   cartItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 20, marginBottom: 15, borderRadius: 20, shadowColor: '#000', shadowOffset: {width: 0, height: 6}, shadowOpacity: 0.06, shadowRadius: 15, elevation: 4 },
   itemInfo: { flexDirection: 'row', alignItems: 'flex-start', flex: 1 },
@@ -273,28 +346,35 @@ const styles = StyleSheet.create({
   itemPrice: { fontSize: 15, fontWeight: '700', color: '#4b5563' },
   
   itemActions: { flexDirection: 'row', alignItems: 'center' },
-  quantitySelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: 90, height: 36, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#fc8019', shadowColor: '#fc8019', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
-  qtyBtn: { width: 30, height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff3ed', borderRadius: 6 },
-  qtyBtnText: { fontSize: 18, color: '#fc8019', fontWeight: 'bold' },
+  quantitySelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: 90, height: 36, backgroundColor: '#f1f5f9', borderRadius: 8 },
+  qtyBtn: { width: 30, height: '100%', justifyContent: 'center', alignItems: 'center' },
+  qtyBtnText: { fontSize: 18, color: '#0f172a', fontWeight: 'bold' },
   qtyText: { fontSize: 15, fontWeight: '900', color: '#111827' },
   
-  billDetails: { backgroundColor: '#fff', marginTop: 10, borderRadius: 24, padding: 25, shadowColor: '#000', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.05, shadowRadius: 20, elevation: 5 },
-  billHeader: { fontSize: 18, fontWeight: '900', color: '#111827', marginBottom: 20, letterSpacing: -0.5 },
+  couponSection: { backgroundColor: '#fff', borderRadius: 20, padding: 20, marginBottom: 15, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
+  couponTitle: { fontSize: 15, fontWeight: '800', color: '#0f172a', marginBottom: 15 },
+  couponInputRow: { flexDirection: 'row', alignItems: 'center' },
+  couponInput: { flex: 1, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, paddingHorizontal: 15, height: 48, marginRight: 10, fontSize: 14, fontWeight: '600', color: '#0f172a' },
+  couponApplyBtn: { backgroundColor: '#020617', paddingHorizontal: 20, height: 48, justifyContent: 'center', alignItems: 'center', borderRadius: 12, shadowColor: '#020617', shadowOffset: {width:0, height:4}, shadowOpacity:0.2, shadowRadius:8, elevation:4 },
+  couponApplyText: { color: '#fff', fontWeight: '800', fontSize: 13, letterSpacing: 0.5 },
+
+  billDetails: { backgroundColor: '#fff', marginTop: 5, borderRadius: 24, padding: 25, shadowColor: '#000', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.05, shadowRadius: 20, elevation: 5 },
+  billHeader: { fontSize: 18, fontWeight: '900', color: '#0f172a', marginBottom: 20, letterSpacing: -0.5 },
   billRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
   billText: { color: '#4b5563', fontSize: 14, fontWeight: '600' },
-  separator: { height: 1, backgroundColor: '#e5e7eb', marginVertical: 15 },
-  grandTotalText: { fontSize: 18, fontWeight: '900', color: '#111827' },
+  separator: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 15 },
+  grandTotalText: { fontSize: 18, fontWeight: '900', color: '#0f172a' },
   
   checkoutFooter: { position: 'absolute', bottom: Platform.OS === 'ios' ? 85 : 65, left: 0, right: 0, backgroundColor: '#fff', padding: 20, paddingBottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', shadowColor: '#000', shadowOffset: {width: 0, height: -10}, shadowOpacity: 0.05, shadowRadius: 20, elevation: 15 },
   payTotal: { fontSize: 24, fontWeight: '900', color: '#111827', letterSpacing: -0.5 },
-  paySub: { fontSize: 11, fontWeight: '800', color: '#10b981', letterSpacing: 1, marginTop: 2 },
-  checkoutBtn: { backgroundColor: '#fc8019', paddingVertical: 18, paddingHorizontal: 30, borderRadius: 16, shadowColor: '#fc8019', shadowOffset: {width: 0, height: 6}, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
+  paySub: { fontSize: 11, fontWeight: '800', color: '#020617', letterSpacing: 1, marginTop: 2 },
+  checkoutBtn: { backgroundColor: '#020617', paddingVertical: 18, paddingHorizontal: 30, borderRadius: 16, shadowColor: '#020617', shadowOffset: {width: 0, height: 6}, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
   checkoutBtnText: { color: '#fff', fontWeight: '900', fontSize: 16, letterSpacing: 0.5 },
 
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fcfcfc', padding: 20, paddingBottom: 100 },
-  emptyTitle: { fontSize: 22, fontWeight: '900', color: '#111827', marginBottom: 10, textAlign: 'center', letterSpacing: -0.5 },
-  emptySub: { fontSize: 15, color: '#6b7280', textAlign: 'center', marginBottom: 35, lineHeight: 22, fontWeight: '500' },
-  browseBtn: { backgroundColor: '#fc8019', paddingVertical: 18, paddingHorizontal: 40, borderRadius: 16, shadowColor: '#fc8019', shadowOffset: {width: 0, height: 6}, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', padding: 20, paddingBottom: 100 },
+  emptyTitle: { fontSize: 24, fontWeight: '900', color: '#0f172a', marginBottom: 10, textAlign: 'center', letterSpacing: -0.5 },
+  emptySub: { fontSize: 15, color: '#64748b', textAlign: 'center', marginBottom: 35, lineHeight: 22, fontWeight: '500' },
+  browseBtn: { backgroundColor: '#020617', paddingVertical: 18, paddingHorizontal: 40, borderRadius: 16, shadowColor: '#020617', shadowOffset: {width: 0, height: 6}, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 30, paddingBottom: Platform.OS === 'ios' ? 40 : 30, shadowColor: '#000', shadowOffset: {width: 0, height: -10}, shadowOpacity: 0.15, shadowRadius: 20, elevation: 30 },

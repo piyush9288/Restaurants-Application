@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, SafeAreaView } from 'react-native';
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { useState, useCallback } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 
@@ -6,8 +6,9 @@ import { useFocusEffect, useRouter } from 'expo-router';
 const API_URL = (typeof process !== 'undefined' ? process.env.EXPO_PUBLIC_API_URL : null) || (typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : null) || 'http://127.0.0.1:8000';
 
 export default function MyOrdersScreen() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orderType, setOrderType] = useState('FOOD'); // 'FOOD' or 'MART'
   const router = useRouter();
 
   const fetchOrders = () => {
@@ -36,49 +37,68 @@ export default function MyOrdersScreen() {
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'PENDING': return '#f0ad4e';
+      case 'PENDING': return orderType === 'MART' ? '#16a34a' : '#020617';
       case 'READY_FOR_PICKUP': return '#17a2b8';
       case 'OUT_FOR_DELIVERY': return '#007bff';
-      case 'DELIVERED': return '#28a745';
+      case 'DELIVERED': return orderType === 'MART' ? '#15803d' : '#28a745';
       default: return '#6c757d';
     }
   };
 
   const getStatusText = (status: string) => {
     switch(status) {
-      case 'PENDING': return 'Preparing your food 🍲';
-      case 'READY_FOR_PICKUP': return 'Food is ready 🛍️';
+      case 'PENDING': return orderType === 'MART' ? 'Packing items 🛒' : 'Preparing food 🍲';
+      case 'READY_FOR_PICKUP': return 'Ready for pickup 🛍️';
       case 'OUT_FOR_DELIVERY': return 'On the way 🛵';
       case 'DELIVERED': return 'Delivered ✅';
       default: return status;
     }
   };
 
+  // Filter mock logic: for now, separate by random id or just show all if backend doesn't support 'type'
+  // Realistically we assume orders have 'is_mart' or we simulate it.
+  const displayOrders = orders.filter(o => orderType === 'MART' ? o.is_mart === true : (o.is_mart !== true));
+
   const renderOrder = ({ item }: { item: any }) => (
     <View style={styles.orderCard}>
       <View style={styles.orderHeader}>
-        <View>
-          <Text style={styles.restaurantName}>Restaurant #{item.restaurant_id}</Text>
-          <Text style={styles.orderId}>Order #{item.id}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={[styles.iconBox, { backgroundColor: orderType === 'MART' ? '#dcfce7' : '#f1f5f9' }]}>
+                <Text style={{ fontSize: 20 }}>{orderType === 'MART' ? '🛒' : '🍽️'}</Text>
+            </View>
+            <View>
+                <Text style={styles.restaurantName}>{orderType === 'MART' ? 'Instamart Store' : `Restaurant #${item.restaurant_id}`}</Text>
+                <Text style={styles.orderDate}>Order #{item.id}</Text>
+            </View>
         </View>
-        <Text style={[styles.statusBadge, { color: getStatusColor(item.status) }]}>
-          {getStatusText(item.status)}
-        </Text>
+        <View style={[styles.statusBadge, { backgroundColor: orderType === 'MART' ? '#dcfce7' : '#f1f5f9' }]}>
+            <Text style={[{ fontSize: 12, fontWeight: '800' }, { color: getStatusColor(item.status) }]}>
+            {getStatusText(item.status)}
+            </Text>
+        </View>
       </View>
       
-      <View style={styles.separator} />
+      <View style={styles.dashedLine} />
       
       <View style={styles.itemsList}>
         {item.items && item.items.map((orderItem: any, idx: number) => (
-          <Text key={idx} style={styles.itemText}>{orderItem.quantity} x {orderItem.menu_item?.name || 'Item'}</Text>
+          <View key={idx} style={styles.itemRow}>
+             <View style={[styles.qtyBox, { backgroundColor: orderType === 'MART' ? '#dcfce7' : '#f8fafc' }]}>
+                 <Text style={[styles.qtyText, { color: orderType === 'MART' ? '#16a34a' : '#020617' }]}>{orderItem.quantity}</Text>
+             </View>
+             <Text style={styles.itemText}>x {orderItem.menu_item?.name || (orderType === 'MART' ? 'Grocery Item' : 'Food Item')}</Text>
+          </View>
         ))}
       </View>
 
-      <View style={styles.separator} />
+      <View style={styles.dashedLine} />
       
       <View style={styles.orderFooter}>
-        <Text style={styles.totalText}>Total: ₹{item.total_amount}</Text>
-        <TouchableOpacity style={styles.reorderBtn} onPress={() => router.push('/')}>
+        <View>
+            <Text style={styles.totalLabel}>Total Paid</Text>
+            <Text style={styles.totalText}>₹{item.total_amount}</Text>
+        </View>
+        <TouchableOpacity style={[styles.reorderBtn, { backgroundColor: orderType === 'MART' ? '#16a34a' : '#020617' }]} onPress={() => router.push('/')}>
           <Text style={styles.reorderText}>REORDER</Text>
         </TouchableOpacity>
       </View>
@@ -89,25 +109,44 @@ export default function MyOrdersScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Past Orders</Text>
+
+        {/* Food / Instamart Toggle */}
+        <View style={styles.toggleContainer}>
+            <TouchableOpacity 
+                activeOpacity={0.7}
+                style={[styles.toggleBtn, orderType === 'FOOD' && styles.toggleActive]}
+                onPress={() => setOrderType('FOOD')}
+            >
+                <Text style={[styles.toggleText, orderType === 'FOOD' && {color: '#020617', fontWeight: '900'}]}>Food Delivery</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+                activeOpacity={0.7}
+                style={[styles.toggleBtn, orderType === 'MART' && styles.toggleActive]}
+                onPress={() => setOrderType('MART')}
+            >
+                <Text style={[styles.toggleText, orderType === 'MART' && {color: '#16a34a', fontWeight: '900'}]}>Instamart</Text>
+            </TouchableOpacity>
+        </View>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#fc8019" style={{marginTop: 50}} />
+        <ActivityIndicator size="large" color={orderType === 'MART' ? '#16a34a' : '#020617'} style={{marginTop: 50}} />
+      ) : displayOrders.length === 0 ? (
+        <View style={styles.emptyState}>
+           <Text style={{fontSize: 50, marginBottom: 15}}>{orderType === 'MART' ? '🛒' : '🍽️'}</Text>
+           <Text style={styles.emptyTitle}>No {orderType === 'MART' ? 'Instamart' : 'Food'} Orders</Text>
+           <Text style={styles.emptyText}>You haven't ordered anything from {orderType === 'MART' ? 'Instamart' : 'Food Delivery'} yet.</Text>
+           <TouchableOpacity style={[styles.browseBtn, { backgroundColor: orderType === 'MART' ? '#16a34a' : '#020617' }]} onPress={() => router.push('/')}>
+             <Text style={{color: '#fff', fontWeight: '900', letterSpacing: 0.5}}>BROWSE NOW</Text>
+           </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
-          data={orders}
+          data={displayOrders}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{ padding: 15 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
           renderItem={renderOrder}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-               <Text style={{fontSize: 50, marginBottom: 15}}>🍽️</Text>
-               <Text style={styles.emptyText}>You haven't ordered anything yet.</Text>
-               <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/')}>
-                 <Text style={{color: '#fff', fontWeight: 'bold'}}>Browse Restaurants</Text>
-               </TouchableOpacity>
-            </View>
-          }
+          showsVerticalScrollIndicator={false}
         />
       )}
     </SafeAreaView>
@@ -115,27 +154,39 @@ export default function MyOrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f0f5' },
-  header: { backgroundColor: '#fff', padding: 20, paddingTop: 60, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  headerTitle: { fontSize: 24, fontWeight: '900', color: '#1c1c1c' },
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  header: { padding: 20, paddingTop: 40, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  headerTitle: { fontSize: 28, fontWeight: '900', color: '#0f172a', letterSpacing: -0.5 },
   
-  orderCard: { backgroundColor: '#fff', borderRadius: 16, padding: 15, marginBottom: 15, shadowColor: '#000', shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
-  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  restaurantName: { fontSize: 16, fontWeight: '700', color: '#3e4152', marginBottom: 4 },
-  orderId: { fontSize: 12, color: '#686b78' },
-  statusBadge: { fontSize: 13, fontWeight: '700', backgroundColor: '#f9f9f9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' },
+  toggleContainer: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 12, padding: 4, marginTop: 20 },
+  toggleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10 },
+  toggleActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOffset: {width:0, height:2}, shadowOpacity:0.05, shadowRadius:4, elevation:2 },
+  toggleText: { fontWeight: '700', color: '#64748b' },
+
+  orderCard: { backgroundColor: '#fff', borderRadius: 24, padding: 20, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.04, shadowRadius: 20, elevation: 5, borderWidth: 1, borderColor: '#f1f5f9' },
+  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  iconBox: { width: 44, height: 44, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  restaurantName: { fontSize: 16, fontWeight: '800', color: '#0f172a', marginBottom: 2 },
+  orderDate: { fontSize: 13, color: '#64748b', fontWeight: '600' },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, alignSelf: 'center' },
   
-  separator: { height: 1, backgroundColor: '#e9e9eb', marginVertical: 12, borderStyle: 'dashed' },
+  dashedLine: { height: 1, borderWidth: 1, borderColor: '#f1f5f9', borderStyle: 'dashed', borderRadius: 1, marginVertical: 15 },
   
   itemsList: { marginVertical: 5 },
-  itemText: { fontSize: 14, color: '#535665', marginBottom: 4 },
+  itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  qtyBox: { width: 26, height: 26, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  qtyText: { fontSize: 12, fontWeight: '800' },
+  itemText: { fontSize: 15, color: '#0f172a', fontWeight: '600', flex: 1 },
   
-  orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  totalText: { fontSize: 15, fontWeight: '700', color: '#3e4152' },
-  reorderBtn: { paddingVertical: 8, paddingHorizontal: 15, backgroundColor: '#fff', borderWidth: 1, borderColor: '#fc8019', borderRadius: 6 },
-  reorderText: { color: '#fc8019', fontWeight: '700', fontSize: 12 },
+  orderFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 },
+  totalLabel: { fontSize: 11, color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  totalText: { fontSize: 20, fontWeight: '900', color: '#0f172a' },
+  
+  reorderBtn: { paddingHorizontal: 25, paddingVertical: 12, borderRadius: 16, shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  reorderText: { color: '#fff', fontWeight: '900', fontSize: 13, letterSpacing: 0.5 },
 
-  emptyState: { alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-  emptyText: { color: '#686b78', fontSize: 16, marginBottom: 20 },
-  browseBtn: { backgroundColor: '#fc8019', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, marginTop: -40 },
+  emptyTitle: { fontSize: 22, fontWeight: '900', color: '#0f172a', marginBottom: 10 },
+  emptyText: { color: '#64748b', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 30 },
+  browseBtn: { paddingHorizontal: 30, paddingVertical: 16, borderRadius: 20 }
 });
