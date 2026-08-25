@@ -211,12 +211,12 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
                       <td style={{padding: '15px 20px', color: '#4b5563'}}>{item.description}</td>
                       <td style={{padding: '15px 20px', color: '#4b5563'}}>{item.address} {item.pincode ? `(${item.pincode})` : ''}</td>
                       <td style={{padding: '15px 20px'}}>
-                        <span style={{backgroundColor: item.is_verified ? '#d1fae5' : '#fef3c7', color: item.is_verified ? '#065f46' : '#92400e', padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold'}}>
-                            {item.is_verified ? 'Verified' : 'Pending'}
+                        <span style={{backgroundColor: item.is_banned ? '#fee2e2' : item.is_verified ? '#d1fae5' : '#fef3c7', color: item.is_banned ? '#991b1b' : item.is_verified ? '#065f46' : '#92400e', padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold'}}>
+                            {item.is_banned ? 'Banned' : item.is_verified ? 'Verified' : 'Pending'}
                         </span>
                       </td>
-                      <td style={{padding: '15px 20px'}}>
-                        {!item.is_verified && (
+                      <td style={{padding: '15px 20px', display: 'flex', gap: '8px'}}>
+                        {!item.is_verified && !item.is_banned && (
                             <button 
                                 onClick={() => {
                                     fetch(`${API_URL}/api/restaurants/${item.id}/verify`, { method: 'PUT' })
@@ -225,6 +225,27 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
                                 style={{backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'}}
                             >
                                 Verify Now
+                            </button>
+                        )}
+                        {item.is_banned ? (
+                            <button 
+                                onClick={() => {
+                                    fetch(`${API_URL}/api/restaurants/${item.id}/unban`, { method: 'PUT' })
+                                        .then(() => fetchData());
+                                }}
+                                style={{backgroundColor: '#10b981', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'}}
+                            >
+                                Unban
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={() => {
+                                    fetch(`${API_URL}/api/restaurants/${item.id}/ban`, { method: 'PUT' })
+                                        .then(() => fetchData());
+                                }}
+                                style={{backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'}}
+                            >
+                                Ban
                             </button>
                         )}
                       </td>

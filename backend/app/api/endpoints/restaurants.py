@@ -72,9 +72,20 @@ def withdraw_earnings(
 
 @router.get("/", response_model=List[RestaurantProfileResponse])
 def get_restaurants(all: bool = False, db: Session = Depends(get_db)):
+    from app.models.review import Review
+    from sqlalchemy import func
+    
     if all:
-        return db.query(RestaurantProfile).all()
-    return db.query(RestaurantProfile).filter(RestaurantProfile.is_verified == True).all()
+        restaurants = db.query(RestaurantProfile).all()
+    else:
+        restaurants = db.query(RestaurantProfile).filter(RestaurantProfile.is_verified == True, RestaurantProfile.is_banned == False).all()
+        
+    for r in restaurants:
+        stats = db.query(func.avg(Review.rating), func.count(Review.id)).filter(Review.restaurant_id == r.id).first()
+        r.rating = float(stats[0]) if stats[0] else 0.0
+        r.review_count = stats[1] if stats[1] else 0
+        
+    return restaurants
 
 @router.put("/{restaurant_id}/verify")
 def verify_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
@@ -110,3 +121,68 @@ def add_menu_item(
     db.commit()
     db.refresh(new_item)
     return new_item
+
+from app.models.review import Review
+from app.schemas.restaurant import ReviewCreate, ReviewResponse
+from sqlalchemy import func
+
+@router.put("/{restaurant_id}/ban")
+def ban_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
+    restaurant = db.query(RestaurantProfile).filter(RestaurantProfile.id == restaurant_id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Not found")
+    restaurant.is_banned = True
+    db.commit()
+    return {"message": "Banned successfully"}
+
+@router.put("/{restaurant_id}/unban")
+def unban_restaurant(restaurant_id: int, db: Session = Depends(get_db)):
+    restaurant = db.query(RestaurantProfile).filter(RestaurantProfile.id == restaurant_id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Not found")
+    restaurant.is_banned = False
+    db.commit()
+    return {"message": "Unbanned successfully"}
+
+@router.post("/{restaurant_id}/reviews", response_model=ReviewResponse)
+def add_review(restaurant_id: int, review: ReviewCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.models.profiles import CustomerProfile
+    if current_user.role != UserRole.CUSTOMER:
+        raise HTTPException(status_code=403, detail="Only customers can leave reviews")
+    new_review = Review(
+        restaurant_id=restaurant_id,
+        customer_id=current_user.id,
+        rating=review.rating,
+        comment=review.comment
+    )
+    db.add(new_review)
+    db.commit()
+    db.refresh(new_review)
+    cust = db.query(CustomerProfile).filter(CustomerProfile.user_id == current_user.id).first()
+    name = cust.name if cust else "Customer"
+    setattr(new_review, "customer_name", name)
+    return new_review
+
+@router.get("/{restaurant_id}/reviews", response_model=List[ReviewResponse])
+def get_reviews(restaurant_id: int, db: Session = Depends(get_db)):
+    from app.models.profiles import CustomerProfile
+    reviews = db.query(Review).filter(Review.restaurant_id == restaurant_id).all()
+    for r in reviews:
+        cust = db.query(CustomerProfile).filter(CustomerProfile.user_id == r.customer_id).first()
+        r.customer_name = cust.name if cust else "Customer"
+    return reviews
+
+@router.get("/{restaurant_id}", response_model=RestaurantProfileResponse)
+def get_restaurant_by_id(restaurant_id: int, db: Session = Depends(get_db)):
+    from app.models.review import Review
+    from sqlalchemy import func
+    
+    restaurant = db.query(RestaurantProfile).filter(RestaurantProfile.id == restaurant_id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Not found")
+        
+    stats = db.query(func.avg(Review.rating), func.count(Review.id)).filter(Review.restaurant_id == restaurant.id).first()
+    restaurant.rating = float(stats[0]) if stats[0] else 0.0
+    restaurant.review_count = stats[1] if stats[1] else 0
+    
+    return restaurant

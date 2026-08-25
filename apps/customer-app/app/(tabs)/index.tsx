@@ -413,7 +413,7 @@ export default function HomeScreen() {
       'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&q=80',
       'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80'
     ];
-    const imgUrl = images[index % images.length];
+    const imgUrl = item.photo_url || images[index % images.length];
     
     return (
       <Animated.View style={{ opacity: listFadeAnim, transform: [{ translateY: listFadeAnim.interpolate({inputRange: [0, 1], outputRange: [20, 0]}) }] }}>
@@ -427,16 +427,14 @@ export default function HomeScreen() {
                 </TouchableOpacity>
                 
                 <View style={styles.mainRestOverlay}>
-                    <Text style={styles.mainRestOffer}>🔥 Flat ₹150 OFF</Text>
-                </View>
-                <View style={styles.mainRestTimeBadge}>
-                    <Text style={styles.mainRestTimeText}>35-40 MINS</Text>
+                    <Text style={styles.mainRestOffer}>🎉 Flat ₹150 OFF</Text>
+                    <Text style={styles.mainRestTime}>{item.id * 5 + 15} mins</Text>
                 </View>
             </View>
-
+            
             <View style={styles.mainRestInfo}>
                 <Text style={styles.mainRestName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.mainRestRating}>⭐ 4.5 (2K+) • {item.address}</Text>
+                <Text style={styles.mainRestRating}>⭐ {item.rating > 0 ? item.rating.toFixed(1) : 'New'} ({item.review_count || 0}) • {item.address || 'Local Area'}</Text>
                 <Text style={styles.mainRestCuisine}>{item.description} • ₹400 for two</Text>
             </View>
           </PremiumButton>

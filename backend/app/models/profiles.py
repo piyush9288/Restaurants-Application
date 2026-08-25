@@ -25,6 +25,7 @@ class RestaurantProfile(Base):
     type = Column(String, default="FOOD") # 'FOOD' or 'MART'
     photo_url = Column(String, nullable=True)
     is_verified = Column(Boolean, default=False)
+    is_banned = Column(Boolean, default=False)
     
     # Financials
     total_earnings = Column(Integer, default=0)
