@@ -101,10 +101,10 @@ export default function RestaurantDashboard() {
   
   const handleUpdateItem = async () => {
       try {
-          const res = await fetch(${API_URL}/api/restaurants/menu/, {
+          const res = await fetch(`${API_URL}/api/restaurants/menu/${editItemData.id}`, {
               method: 'PUT',
               headers: { 
-                  'Authorization': Bearer ,
+                  'Authorization': `Bearer ${getToken()}`,
                   'Content-Type': 'application/json'
               },
               body: JSON.stringify({

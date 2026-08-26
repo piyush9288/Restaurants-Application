@@ -362,10 +362,15 @@ export default function HomeScreen() {
         setAllRestaurants(data);
         setRestaurants(data);
       })
-      .catch(() => {})
-      .finally(() => {
-          setTimeout(() => setLoading(false), 800);
-      });
+      .catch(e => console.log(e))
+      .finally(() => setLoading(false));
+
+    fetch(`${API_URL}/api/restaurants/offers/all`)
+      .then(res => res.json())
+      .then(data => {
+        if(Array.isArray(data)) setOffersList(data);
+      })
+      .catch(e => console.log(e));
   }, []);
 
   // Filter Logic whenever state changes
