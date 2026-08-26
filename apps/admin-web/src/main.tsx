@@ -138,9 +138,9 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
         return;
     }
 
-    let url = ${API_URL}/api//;
-    if (activeTab === 'restaurants') url = ${API_URL}/api//?all=true;
-    if (activeTab === 'offers') url = ${API_URL}/api/restaurants/offers/all;
+    let url = `${API_URL}/api/${activeTab}/`;
+    if (activeTab === 'restaurants') url = `${API_URL}/api/${activeTab}/?all=true`;
+    if (activeTab === 'offers') url = `${API_URL}/api/restaurants/offers/all`;
     fetch(url)
       .then(res => res.json())
       .then(resData => {
@@ -228,7 +228,7 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
                     const title = prompt('Enter title (e.g. 50% Off)');
                     const desc = prompt('Enter description');
                     const amt = prompt('Enter discount amount text (e.g. 50%)');
-                    fetch(${API_URL}/api/restaurants/offers, {
+                    fetch(`${API_URL}/api/restaurants/offers`, {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json'},
                       body: JSON.stringify({ code, title, description: desc, discount_amount: amt })
@@ -257,7 +257,7 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
                           <button 
                               onClick={() => {
                                   if(!confirm('Delete this offer?')) return;
-                                  fetch(${API_URL}/api/restaurants/offers/, { method: 'DELETE' })
+                                  fetch(`${API_URL}/api/restaurants/offers/${item.id}`, { method: 'DELETE' })
                                       .then(() => fetchData());
                               }}
                               style={{backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'}}
