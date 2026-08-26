@@ -24,6 +24,7 @@ class RestaurantProfile(Base):
     phone = Column(String, nullable=True)
     type = Column(String, default="FOOD") # 'FOOD' or 'MART'
     photo_url = Column(String, nullable=True)
+    cover_url = Column(String, nullable=True)
     offer_text = Column(String, default="🎉 Flat ₹150 OFF")
     is_verified = Column(Boolean, default=False)
     is_banned = Column(Boolean, default=False)
@@ -47,3 +48,15 @@ class DeliveryPartnerProfile(Base):
     total_earnings = Column(Integer, default=0)
     upi_id = Column(String, nullable=True)
     withdrawn_amount = Column(Integer, default=0)
+from sqlalchemy import Column, Integer, String
+
+
+class Offer(Base):
+    __tablename__ = "offers"
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    discount_amount = Column(String, default="50%")
+    bg_color = Column(String, default="#fc8019")
+    type = Column(String, default="FOOD")

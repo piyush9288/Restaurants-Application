@@ -138,7 +138,9 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
         return;
     }
 
-    const url = activeTab === 'restaurants' ? `${API_URL}/api/${activeTab}/?all=true` : `${API_URL}/api/${activeTab}/`;
+    let url = ${API_URL}/api//;
+    if (activeTab === 'restaurants') url = ${API_URL}/api//?all=true;
+    if (activeTab === 'offers') url = ${API_URL}/api/restaurants/offers/all;
     fetch(url)
       .then(res => res.json())
       .then(resData => {
@@ -167,7 +169,8 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
             { id: 'restaurants', label: '🏪 Restaurants' },
             { id: 'orders', label: '🛒 Orders Tracker' },
             { id: 'users', label: '👥 Customers' },
-            { id: 'riders', label: '🛵 Delivery Partners' }
+            { id: 'riders', label: '🛵 Delivery Partners' },
+            { id: 'offers', label: '🎫 Global Offers' }
           ].map(tab => (
             <li 
               key={tab.id}
@@ -215,6 +218,61 @@ const AdminDashboard = ({ adminEmail, onLogout }: { adminEmail: string, onLogout
             
             {loading ? <div style={{padding: '40px', textAlign: 'center', color: '#6b7280'}}>Loading data...</div> : null}
             
+            
+            {!loading && (activeTab === 'offers') && (
+              <div>
+                <button 
+                  onClick={() => {
+                    const code = prompt('Enter code (e.g. FLAT50)');
+                    if(!code) return;
+                    const title = prompt('Enter title (e.g. 50% Off)');
+                    const desc = prompt('Enter description');
+                    const amt = prompt('Enter discount amount text (e.g. 50%)');
+                    fetch(${API_URL}/api/restaurants/offers, {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({ code, title, description: desc, discount_amount: amt })
+                    }).then(() => fetchData());
+                  }}
+                  style={{backgroundColor: '#fc8019', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', marginBottom: '20px'}}
+                >
+                  + Create New Offer
+                </button>
+                <table style={{width: '100%', textAlign: 'left', borderCollapse: 'collapse'}}>
+                  <thead style={{ backgroundColor: '#f9fafb' }}>
+                    <tr>
+                      <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Code</th>
+                      <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Title</th>
+                      <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Description</th>
+                      <th style={{padding: '15px 20px', color: '#6b7280', fontSize: '12px', textTransform: 'uppercase'}}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((item: any) => (
+                      <tr key={item.id} style={{borderTop: '1px solid #f3f4f6'}}>
+                        <td style={{padding: '15px 20px', fontWeight: 'bold', color: '#111827'}}>{item.code}</td>
+                        <td style={{padding: '15px 20px', color: '#4b5563'}}>{item.title} ({item.discount_amount})</td>
+                        <td style={{padding: '15px 20px', color: '#4b5563'}}>{item.description}</td>
+                        <td style={{padding: '15px 20px'}}>
+                          <button 
+                              onClick={() => {
+                                  if(!confirm('Delete this offer?')) return;
+                                  fetch(${API_URL}/api/restaurants/offers/, { method: 'DELETE' })
+                                      .then(() => fetchData());
+                              }}
+                              style={{backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px'}}
+                          >
+                              Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {data.length === 0 && <tr><td colSpan={4} style={{padding: '30px', textAlign: 'center'}}>No offers found</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             {!loading && (activeTab === 'restaurants') && (
               <table style={{width: '100%', textAlign: 'left', borderCollapse: 'collapse'}}>
                 <thead style={{ backgroundColor: '#f9fafb' }}>

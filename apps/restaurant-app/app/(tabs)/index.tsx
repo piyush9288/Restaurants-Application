@@ -14,6 +14,7 @@ export default function RestaurantDashboard() {
   
   // New Item State
   const [newItemName, setNewItemName] = useState('');
+  const [editItemData, setEditItemData] = useState<any>(null);
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemImage, setNewItemImage] = useState<string | null>(null);
@@ -28,6 +29,7 @@ export default function RestaurantDashboard() {
   const [editDesc, setEditDesc] = useState('');
   const [editUpi, setEditUpi] = useState('');
   const [editPhoto, setEditPhoto] = useState<string | null>(null);
+  const [editCover, setEditCover] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
 
   const router = useRouter();
@@ -52,6 +54,7 @@ export default function RestaurantDashboard() {
             setEditDesc(p.description || '');
             setEditUpi(p.upi_id || '');
             setEditPhoto(p.photo_url || null);
+          setEditCover(p.cover_url || null);
         }
         
         if (p.id) {
@@ -95,6 +98,30 @@ export default function RestaurantDashboard() {
     }).then(() => fetchData());
   };
   
+  
+  const handleUpdateItem = async () => {
+      try {
+          const res = await fetch(${API_URL}/api/restaurants/menu/, {
+              method: 'PUT',
+              headers: { 
+                  'Authorization': Bearer ,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  name: editItemData.name,
+                  description: editItemData.description,
+                  price: parseFloat(editItemData.price),
+                  is_veg: editItemData.is_veg,
+                  image_url: editItemData.image_url
+              })
+          });
+          if (res.ok) {
+              setEditItemData(null);
+              fetchData();
+          }
+      } catch(e) {}
+  };
+
   const pickImage = async (setter: any) => {
       let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -195,6 +222,7 @@ export default function RestaurantDashboard() {
                   description: editDesc,
                   upi_id: editUpi,
                   photo_url: editPhoto,
+                  cover_url: editCover,
                   type: profile?.type || 'FOOD'
               })
           });
@@ -378,9 +406,36 @@ export default function RestaurantDashboard() {
                         {item.description ? <Text style={{fontSize: 13, color: '#64748b', marginTop: 2}} numberOfLines={1}>{item.description}</Text> : null}
                     </View>
                   </View>
-                  <Text style={{fontSize: 16, fontWeight: '900', color: '#10b981'}}>₹{item.price}</Text>
+                  <View style={{alignItems: 'flex-end'}}>
+                      <Text style={{fontSize: 16, fontWeight: '900', color: '#10b981'}}>₹{item.price}</Text>
+                      <TouchableOpacity onPress={() => setEditItemData(item)} style={{marginTop: 5, padding: 5, backgroundColor: '#f1f5f9', borderRadius: 4}}>
+                          <Text style={{fontSize: 12, color: '#475569', fontWeight: 'bold'}}>Edit</Text>
+                      </TouchableOpacity>
+                  </View>
                 </View>
               ))}
+
+              {editItemData && (
+                  <View style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 100, justifyContent: 'center', alignItems: 'center'}}>
+                      <View style={{backgroundColor: 'white', padding: 20, borderRadius: 12, width: '90%'}}>
+                          <Text style={{fontSize: 18, fontWeight: '900', marginBottom: 15}}>Edit Item</Text>
+                          <TouchableOpacity onPress={() => pickImage((uri: string) => setEditItemData({...editItemData, image_url: uri}))} style={{height: 120, backgroundColor: '#f8fafc', borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', marginBottom: 15, overflow: 'hidden'}}>
+                              {editItemData.image_url ? <Image source={{uri: editItemData.image_url}} style={{width: '100%', height: '100%'}} /> : <Text style={{color: '#64748b'}}>+ Change Photo</Text>}
+                          </TouchableOpacity>
+                          <TextInput style={styles.input} placeholder="Name" value={editItemData.name} onChangeText={t => setEditItemData({...editItemData, name: t})} />
+                          <TextInput style={styles.input} placeholder="Description" value={editItemData.description} onChangeText={t => setEditItemData({...editItemData, description: t})} />
+                          <TextInput style={styles.input} placeholder="Price" value={editItemData.price.toString()} onChangeText={t => setEditItemData({...editItemData, price: t})} keyboardType="number-pad" />
+                          <View style={{flexDirection: 'row', gap: 10, marginTop: 10}}>
+                              <TouchableOpacity style={[styles.actionBtn, {flex: 1, backgroundColor: '#3b82f6', alignItems: 'center'}]} onPress={handleUpdateItem}>
+                                  <Text style={styles.actionText}>Save</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity style={[styles.actionBtn, {flex: 1, backgroundColor: '#cbd5e1', alignItems: 'center'}]} onPress={() => setEditItemData(null)}>
+                                  <Text style={[styles.actionText, {color: '#334155'}]}>Cancel</Text>
+                              </TouchableOpacity>
+                          </View>
+                      </View>
+                  </View>
+              )}
             </View>
           )
         }
@@ -424,16 +479,28 @@ export default function RestaurantDashboard() {
           activeTab === 'PROFILE' && (
             <View style={[styles.orderCard, {padding: 20}]}>
                 <Text style={{fontSize: 18, fontWeight: '900', color: '#0f172a', marginBottom: 15}}>Edit Profile</Text>
-                
-                <TouchableOpacity onPress={() => pickImage(setEditPhoto)} style={{alignSelf: 'center', marginBottom: 20}}>
-                    {editPhoto ? (
-                        <Image source={{uri: editPhoto}} style={{width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#e2e8f0'}} />
-                    ) : (
-                        <View style={{width: 100, height: 100, borderRadius: 50, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center'}}>
-                            <Text style={{fontSize: 30}}>📸</Text>
-                        </View>
-                    )}
-                </TouchableOpacity>
+                <View style={{flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 20}}>
+                    <TouchableOpacity onPress={() => pickImage(setEditPhoto)} style={{alignItems: 'center'}}>
+                        <Text style={{fontSize: 12, color: '#64748b', marginBottom: 5}}>Profile Photo</Text>
+                        {editPhoto ? (
+                            <Image source={{uri: editPhoto}} style={{width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: '#e2e8f0'}} />
+                        ) : (
+                            <View style={{width: 80, height: 80, borderRadius: 40, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center'}}>
+                                <Text style={{fontSize: 24}}>📷</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => pickImage(setEditCover)} style={{alignItems: 'center'}}>
+                        <Text style={{fontSize: 12, color: '#64748b', marginBottom: 5}}>Cover Photo</Text>
+                        {editCover ? (
+                            <Image source={{uri: editCover}} style={{width: 120, height: 80, borderRadius: 10, borderWidth: 3, borderColor: '#e2e8f0'}} />
+                        ) : (
+                            <View style={{width: 120, height: 80, borderRadius: 10, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center'}}>
+                                <Text style={{fontSize: 24}}>🖼️</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
 
                 <Text style={{fontSize: 13, fontWeight: 'bold', color: '#64748b', marginBottom: 5}}>Restaurant Name</Text>
                 <TextInput style={styles.input} value={editName} onChangeText={setEditName} placeholder="Name" />

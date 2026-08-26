@@ -9,6 +9,7 @@ class RestaurantProfileBase(BaseModel):
     phone: Optional[str] = None
     type: str = "FOOD"
     photo_url: Optional[str] = None
+    cover_url: Optional[str] = None
     offer_text: Optional[str] = "🎉 Flat ₹150 OFF"
     upi_id: Optional[str] = None
 

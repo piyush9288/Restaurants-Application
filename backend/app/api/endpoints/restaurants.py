@@ -209,3 +209,69 @@ def admin_update_restaurant(restaurant_id: int, profile_data: RestaurantProfileU
     db.commit()
     db.refresh(restaurant)
     return restaurant
+
+@router.put("/menu/{item_id}", response_model=MenuItemResponse)
+def update_menu_item(
+    item_id: int,
+    item_data: MenuItemCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.RESTAURANT:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    restaurant = db.query(RestaurantProfile).filter(RestaurantProfile.user_id == current_user.id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant profile not found")
+        
+    menu_item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.restaurant_id == restaurant.id).first()
+    if not menu_item:
+        raise HTTPException(status_code=404, detail="Item not found")
+        
+    for key, value in item_data.model_dump().items():
+        setattr(menu_item, key, value)
+        
+    db.commit()
+    db.refresh(menu_item)
+    return menu_item
+
+from pydantic import BaseModel
+from typing import List, Optional
+
+class OfferBase(BaseModel):
+    code: str
+    title: str
+    description: Optional[str] = None
+    discount_amount: str = "50%"
+    bg_color: str = "#fc8019"
+    type: str = "FOOD"
+
+class OfferCreate(OfferBase):
+    pass
+
+class OfferResponse(OfferBase):
+    id: int
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+from app.models.profiles import Offer
+
+@router.get("/offers/all", response_model=List[OfferResponse])
+def get_all_offers(db: Session = Depends(get_db)):
+    return db.query(Offer).all()
+
+@router.post("/offers", response_model=OfferResponse)
+def create_offer(offer: OfferCreate, db: Session = Depends(get_db)):
+    db_offer = Offer(**offer.model_dump())
+    db.add(db_offer)
+    db.commit()
+    db.refresh(db_offer)
+    return db_offer
+
+@router.delete("/offers/{offer_id}")
+def delete_offer(offer_id: int, db: Session = Depends(get_db)):
+    offer = db.query(Offer).filter(Offer.id == offer_id).first()
+    if offer:
+        db.delete(offer)
+        db.commit()
+    return {"message": "Deleted"}

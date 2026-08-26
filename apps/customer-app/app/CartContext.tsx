@@ -85,18 +85,41 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   React.useEffect(() => {
       // Async dynamic import to avoid crashes if AsyncStorage is missing
-      const loadProfile = async () => {
-          try {
-              const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-              const saved = await AsyncStorage.getItem('globalUserProfile');
-              if (saved) {
-                  setUserProfileState(JSON.parse(saved));
-              }
-          } catch (e) {
-              console.log('No saved profile or async storage error');
-          }
-      };
-      loadProfile();
+        const loadProfile = async () => {
+            try {
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                let token = null;
+                try {
+                    token = typeof window !== 'undefined' ? localStorage.getItem('token') : await AsyncStorage.getItem('token');
+                } catch(e) {}
+                
+                if (token) {
+                    try {
+                        const res = await fetch(`${API_URL}/api/users/me/profile`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.name) {
+                                setUserProfileState(data);
+                                await AsyncStorage.setItem('globalUserProfile', JSON.stringify(data));
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.log('Failed fetching user profile from server', e);
+                    }
+                }
+                
+                const saved = await AsyncStorage.getItem('globalUserProfile');
+                if (saved) {
+                    setUserProfileState(JSON.parse(saved));
+                }
+            } catch (e) {
+                console.log('No saved profile or async storage error');
+            }
+        };
+        loadProfile();
   }, []);
 
   const setUserProfile = async (profile: any) => {

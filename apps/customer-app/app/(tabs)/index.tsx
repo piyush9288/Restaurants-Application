@@ -185,6 +185,7 @@ export default function HomeScreen() {
   const [activeCategory, setActiveCategory] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [offersList, setOffersList] = useState<any[]>([]);
   
   const [locationTitle, setLocationTitle] = useState('Fetching location...');
   const [locationSub, setLocationSub] = useState('Please wait...');
@@ -706,17 +707,7 @@ export default function HomeScreen() {
                               {activeTab === 'MART OFFERS' && (
                                   <View style={{padding: 20}}>
                                       <Text style={styles.sectionTitle}>Instamart Offers</Text>
-                                      <PremiumButton style={styles.couponCard} onPress={async () => { await Clipboard.setStringAsync('MART50'); }}>
-                                           <View style={styles.couponLeft}>
-                                               <Text style={styles.couponPercent}>50%</Text>
-                                               <Text style={styles.couponOff}>OFF</Text>
-                                           </View>
-                                           <View style={styles.couponRight}>
-                                               <Text style={styles.couponCode}>MART50</Text>
-                                               <Text style={styles.couponDesc}>Use code to get 50% off up to ₹100 on your first grocery order.</Text>
-                                               <Text style={styles.couponTap}>TAP TO COPY</Text>
-                                           </View>
-                                       </PremiumButton>
+                                      
                                   </View>
                               )}
                           </>
@@ -880,29 +871,25 @@ export default function HomeScreen() {
                           <Text style={styles.sectionTitle}>Exclusive Coupons</Text>
                           <Text style={{color: '#94a3b8', marginBottom: 20}}>Apply these at checkout for mega savings</Text>
 
-                          <PremiumButton style={styles.couponCard} onPress={async () => { await Clipboard.setStringAsync('WELCOME50'); }}>
-                              <View style={styles.couponLeft}>
-                                  <Text style={styles.couponPercent}>50%</Text>
-                                  <Text style={styles.couponOff}>OFF</Text>
-                              </View>
-                              <View style={styles.couponRight}>
-                                  <Text style={styles.couponCode}>WELCOME50</Text>
-                                  <Text style={styles.couponDesc}>Use code to get 50% off up to ₹150 on your first order. Valid on all premium restaurants.</Text>
-                                  <Text style={styles.couponTap}>TAP TO COPY</Text>
-                              </View>
-                          </PremiumButton>
+                          {offersList.length > 0 ? offersList.map((offer: any) => (
+                              <PremiumButton key={offer.id} style={styles.couponCard} onPress={async () => { await Clipboard.setStringAsync(offer.code); }}>
+                                  <View style={[styles.couponLeft, {backgroundColor: offer.bg_color || '#fc8019'}]}>
+                                      <Text style={styles.couponPercent}>{offer.discount_amount}</Text>
+                                  </View>
+                                  <View style={styles.couponRight}>
+                                      <Text style={styles.couponCode}>{offer.code}</Text>
+                                      <Text style={styles.couponDesc}>{offer.title} - {offer.description}</Text>
+                                      <Text style={styles.couponTap}>TAP TO COPY</Text>
+                                  </View>
+                              </PremiumButton>
+                          )) : (
+                              <Text style={{color: '#94a3b8', marginTop: 20}}>No active offers at the moment.</Text>
+                          )}
 
-                          <PremiumButton style={styles.couponCard} onPress={async () => { await Clipboard.setStringAsync('PAYTM100'); }}>
-                              <View style={[styles.couponLeft, {backgroundColor: '#3b82f6'}]}>
-                                  <Text style={styles.couponPercent}>FLAT</Text>
-                                  <Text style={styles.couponOff}>₹100</Text>
-                              </View>
-                              <View style={styles.couponRight}>
-                                  <Text style={styles.couponCode}>PAYTM100</Text>
-                                  <Text style={styles.couponDesc}>Get flat ₹100 cashback using Paytm Wallet on minimum order of ₹399.</Text>
-                                  <Text style={styles.couponTap}>TAP TO COPY</Text>
-                              </View>
-                          </PremiumButton>
+
+                          
+
+                          
                       </View>
                   ) : activeTab === 'FOOD ON TRAIN' ? (
                       <View style={[styles.sectionContainer, {marginTop: 20}]}>
