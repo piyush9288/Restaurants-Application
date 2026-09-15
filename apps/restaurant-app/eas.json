@@ -4,8 +4,15 @@
       "android": {
         "buildType": "apk"
       },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://negotiate-trimming-reclining.ngrok-free.dev"
+      },
       "distribution": "internal"
     },
-    "production": {}
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://negotiate-trimming-reclining.ngrok-free.dev"
+      }
+    }
   }
 }
