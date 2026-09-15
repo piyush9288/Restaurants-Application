@@ -5,13 +5,13 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://negotiate-trimming-reclining.ngrok-free.dev"
+        "EXPO_PUBLIC_API_URL": "https://restaurants-application-sgs8.onrender.com"
       },
       "distribution": "internal"
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://negotiate-trimming-reclining.ngrok-free.dev"
+        "EXPO_PUBLIC_API_URL": "https://restaurants-application-sgs8.onrender.com"
       }
     }
   }
